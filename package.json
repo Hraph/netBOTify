@@ -1,0 +1,33 @@
+{
+  "name": "networkerify",
+  "version": "1.0.0",
+  "description": "A realtime and scalable remote tasks execution over WebSockets",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hraph/netWorkerify.git"
+  },
+  "keywords": [
+    "realtime",
+    "rpc",
+    "scalable",
+    "worker",
+    "server",
+    "websocket",
+    "socket",
+    "task"
+  ],
+  "author": "Hraph",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/hraph/netWorkerify/issues"
+  },
+  "homepage": "https://github.com/hraph/netWorkerify#readme"
+}
