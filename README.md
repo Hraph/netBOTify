@@ -1,2 +1,2 @@
-# netWorkerify
-Realtime scalable remote tasks execution over WebSockets
+# netBOTify
+A realtime and scalable remote tasks execution BOT over network (using WebSockets)
