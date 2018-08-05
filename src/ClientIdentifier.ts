@@ -3,6 +3,12 @@ export enum ClientType {
     RemoteCLI
 }
 
+export enum TaskStatus {
+    Idle = 0,
+    Running,
+    Error
+}
+
 
 export default class ClientIdentifier {
     public clientType: ClientType = ClientType.Worker;
@@ -12,6 +18,8 @@ export default class ClientIdentifier {
     public instanceId: string;
     public commitId: any = null;
     public latestReceivedPingTimestamp: number = 0;
+    public taskStatus: TaskStatus = TaskStatus.Idle;
+    public ip: string;
 
 
     constructor(groupId: string, instanceId: string) {
