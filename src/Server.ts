@@ -10,37 +10,49 @@ declare var require: any;
 
 
 export default class Server {
-    clients: ClientIdentifier[] = [];
-    config: any = {};
+    public clients: ClientIdentifier[] = [];
+    private config: any = {};
     private server: any;
-    private _internalActions(){
-        this.server.exports.ping = function () {
+    private _internalActions(__this: Server){
+        this.server.exports.ping = function() {
+            __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
+                client.latestReceivedPingTimestamp = Date.now();
+            });
             return 1;
-        }
+        };
 
         this.server.exports.task = {
             result: (result: any) => {
                 console.log("result");
             }
-        }
+        };
 
         this.server.exports.cli = {
-            ping: () => {
-                return 1;
+            ping: function() {
+                __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
+                   client.latestReceivedPingTimestamp = Date.now();
+                });
+                return "pong";
+            },
+            getWorkers: function() {
+                return __this.clients.filter(client => client.clientType == ClientType.Worker);
+            },
+            getCLIs: function() {
+                return __this.clients.filter(client => client.clientType == ClientType.RemoteCLI);
             }
         }
-    }
-    private _authenticate(identifier: ClientIdentifier, next: Function){
-        this.clients.push(identifier);
-        next();
     }
 
     constructor(config: any = {}){
         this.config = config;
-
-        this.config.authenticate = this._authenticate;
+        let __this = this; //Keep context
 
         this.server = new EurecaServer({
+            authenticate: function(identifier: ClientIdentifier, next: Function){
+                identifier.clientId = this.user.clientId; //Save socket clientId
+                __this.clients.push(identifier);
+                next();
+            },
             prefix: "nbfy",
             allow: ["launchTask", "stopTask", "statusTask"]
         });
@@ -60,6 +72,7 @@ export default class Server {
 
 
         this.server.onDisconnect(function (connection: any) {
+            __this.clients = __this.clients.filter(client => client.clientId !== connection.id); //Remove client from clients
             console.log('client %s disconnected', connection.id);
         });
 
@@ -67,7 +80,7 @@ export default class Server {
             console.log('an error occured', e);
         });
 
-        this._internalActions();
+        this._internalActions(this);
     }
 
     /**

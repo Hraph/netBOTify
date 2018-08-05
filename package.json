@@ -33,6 +33,7 @@
   },
   "homepage": "https://github.com/hraph/netBOTify#readme",
   "dependencies": {
+    "console.table": "^0.10.0",
     "engine.io": "^3.2.0",
     "engine.io-client": "^3.2.1",
     "eureca.io": "^0.8.2",
