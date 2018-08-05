@@ -1,4 +1,5 @@
 import Client from "./Client";
+import {TaskStatus} from "./ClientIdentifier";
 
 const EventEmitter = require("events");
 
@@ -56,12 +57,20 @@ export default class Worker extends Client {
             //this.serverProxy is injected by eureca
 
             __this.taskEvent.emit("launchTask", __this.server);
+            __this.server.task.taskLaunched().catch((e: any) => {
+                console.log("Unable to execute command ", e);
+            });
+            __this.identifier.taskStatus = TaskStatus.Running;
         }
 
         this.client.exports.stopTask = function() {
             //this.serverProxy is injected by eureca
 
             __this.taskEvent.emit("stopTask", __this.server);
+            __this.server.task.taskStopped().catch((e: any) => {
+                console.log("Unable to execute command ", e);
+            });
+            __this.identifier.taskStatus = TaskStatus.Idle;
         }
     }
 

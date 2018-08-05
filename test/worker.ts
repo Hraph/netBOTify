@@ -11,5 +11,5 @@ let worker = new Worker({
 
 worker.onLaunchTask((server: any) => {
     console.log("launch", server);
-    server.taskLaunched();
+
 });

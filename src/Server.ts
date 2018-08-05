@@ -1,4 +1,4 @@
-import ClientIdentifier, {ClientType} from "./ClientIdentifier";
+import ClientIdentifier, {ClientType, TaskStatus} from "./ClientIdentifier";
 
 const EurecaServer = require("eureca.io").Server;
 const express = require('express')
@@ -22,7 +22,20 @@ export default class Server {
         };
 
         this.server.exports.task = {
-            result: (result: any) => {
+            taskLaunched: function () {
+                __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
+                    client.taskStatus = TaskStatus.Running;
+                });
+            },
+            taskStopped: function () {
+                __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
+                    client.taskStatus = TaskStatus.Idle;
+                });
+            },
+            taskLog: function (log: any) {
+
+            },
+            result: function(result: any) {
                 console.log("result");
             }
         };
@@ -39,6 +52,26 @@ export default class Server {
             },
             getCLIs: function() {
                 return __this.clients.filter(client => client.clientType == ClientType.RemoteCLI);
+            },
+            launchTasks: function () {
+                let count = 0;
+                __this.clients.filter(client => client.clientType == ClientType.Worker).forEach(client => {
+                    __this.server.getClient(client.clientId).launchTask().catch((e: any) => {
+                        console.log("Unable to stop task ", e);
+                    });
+                    ++count;
+                });
+                return count + " tasks launched successfully";
+            },
+            stopTasks: function () {
+                let count = 0;
+                __this.clients.filter(client => client.clientType == ClientType.Worker).forEach(client => {
+                    __this.server.getClient(client.clientId).stopTask().catch((e: any) => {
+                        console.log("Unable to stop task ", e);
+                    });
+                    ++count;
+                });
+                return count + " tasks stopped successfully";
             }
         }
     }

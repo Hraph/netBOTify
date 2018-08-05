@@ -52,6 +52,16 @@ export default class RemoteCLI extends Client {
                 this._executePrintDistantCommand("ping", callback);
             });
         vorpal
+            .command('launch', 'Launch the tasks on workers.')
+            .action((args: any, callback: Function) => {
+                this._executePrintDistantCommand("launchTasks", callback);
+            });
+        vorpal
+            .command('stop', 'Stop the tasks on workers.')
+            .action((args: any, callback: Function) => {
+                this._executePrintDistantCommand("stopTasks", callback);
+            });
+        vorpal
             .command('workers', 'Get server connected workers')
             .action((args: any, callback: Function) => {
                 this._executeTableDistantCommand("getWorkers", callback);
@@ -65,17 +75,36 @@ export default class RemoteCLI extends Client {
     }
 
     private _executePrintDistantCommand(commandName: string, callback: Function){
-        this.server.cli[commandName]().then((result: any) => {
-            console.log(result);
+        try {
+            this.server.cli[commandName]().then((result: any) => {
+                console.log(result);
+            });
+        }
+        catch(e){
+            this._serverInvalidCommandError(e);
+        }
+        finally {
             callback();
-        });
+        }
     }
 
     private _executeTableDistantCommand(commandName: string, callback: Function){
-        this.server.cli[commandName]().then((result: any) => {
-            console.table(result);
+        try {
+            this.server.cli[commandName]().then((result: any) => {
+                console.log(result.length + " items");
+                console.table(result);
+            });
+        }
+        catch(e){
+            this._serverInvalidCommandError(e);
+        }
+        finally {
             callback();
-        });
+        }
+    }
+
+    private _serverInvalidCommandError(e: any){
+        console.log("Error in command ", e);
     }
 
 }
