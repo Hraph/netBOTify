@@ -1,4 +1,4 @@
-import ClientIdentifier, {ClientType, TaskStatus} from "./ClientIdentifier";
+import {ClientIdentifier, ClientType, TaskStatus} from "./ClientIdentifier";
 
 const EurecaServer = require("eureca.io").Server;
 const express = require('express')
@@ -9,7 +9,7 @@ const express = require('express')
 declare var require: any;
 
 
-export default class Server {
+export class Server {
     public clients: ClientIdentifier[] = [];
     private config: any = {};
     private server: any;

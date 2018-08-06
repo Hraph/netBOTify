@@ -1,5 +1,5 @@
-import RemoteCLI from '../src/RemoteCLI';
-import ClientIdentifier, {ClientType} from '../src/ClientIdentifier';
+import {RemoteCLI} from '../src/RemoteCLI';
+import {ClientIdentifier, ClientType} from '../src/ClientIdentifier';
 
 
 let identifier = new ClientIdentifier("RemoteCLI", "1");

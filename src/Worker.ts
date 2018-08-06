@@ -1,4 +1,4 @@
-import Client from "./Client";
+import {Client} from "./Client";
 import {TaskStatus} from "./ClientIdentifier";
 
 const EventEmitter = require("events");
@@ -7,7 +7,7 @@ const EventEmitter = require("events");
 declare var require: any;
 
 
-export default class Worker extends Client {
+export class Worker extends Client {
     private taskEvent: any;
     constructor(config: any = {}){
         super(config); //Create client

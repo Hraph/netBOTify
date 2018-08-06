@@ -10,7 +10,7 @@ export enum TaskStatus {
 }
 
 
-export default class ClientIdentifier {
+export class ClientIdentifier {
     public clientType: ClientType = ClientType.Worker;
     public clientId: any = null;
     public token: string;

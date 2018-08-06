@@ -1,5 +1,5 @@
-import Worker from '../src/Worker';
-import ClientIdentifier from '../src/ClientIdentifier';
+import {Worker} from '../src/Worker';
+import {ClientIdentifier} from '../src/ClientIdentifier';
 
 
 let identifier = new ClientIdentifier("group1", "1");

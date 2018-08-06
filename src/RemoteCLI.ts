@@ -1,4 +1,4 @@
-import Client from "./Client";
+import {Client} from "./Client";
 
 const EventEmitter = require("events"),
       vorpal = require('vorpal')(),
@@ -8,7 +8,7 @@ const EventEmitter = require("events"),
 declare var require: any;
 
 
-export default class RemoteCLI extends Client {
+export class RemoteCLI extends Client {
     private taskEvent: any;
     constructor(config: any = {}){
         super(config); //Create client

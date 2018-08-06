@@ -1,4 +1,4 @@
-import ClientIdentifier from "./ClientIdentifier";
+import {ClientIdentifier} from "./ClientIdentifier";
 
 const EurecaClient = require("eureca.io").Client;
 
@@ -6,7 +6,7 @@ const EurecaClient = require("eureca.io").Client;
 declare var require: any;
 
 
-export default class Client {
+export class Client {
     protected config: any = {};
     protected client: any;
     protected server: any = null;
