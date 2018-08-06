@@ -19,7 +19,7 @@ export default class ClientIdentifier {
     public commitId: any = null;
     public latestReceivedPingTimestamp: number = 0;
     public taskStatus: TaskStatus = TaskStatus.Idle;
-    public ip: string;
+    public ip: any = null;
 
 
     constructor(groupId: string, instanceId: string) {

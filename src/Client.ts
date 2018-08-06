@@ -11,8 +11,8 @@ export default class Client {
     protected client: any;
     protected server: any = null;
     protected identifier: ClientIdentifier;
-    private pingInterval: number;
-    private pingTimeout: number;
+    private pingInterval: number = 0;
+    private pingTimeout: number = 0;
     private pingIntervalSecond: number = 5;
     private pingTimeoutSecond: number = 2;
 
