@@ -57,7 +57,7 @@ export class Server {
                 let count = 0;
                 __this.clients.filter(client => client.clientType == ClientType.Worker).forEach(client => {
                     __this.server.getClient(client.clientId).launchTask().catch((e: any) => {
-                        console.log("Unable to stop task ", e);
+                        console.log("Unable to launch task ", e);
                     });
                     ++count;
                 });

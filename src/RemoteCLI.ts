@@ -1,4 +1,5 @@
 import {Client} from "./Client";
+import {ClientIdentifier, ClientType, TaskStatus} from "./ClientIdentifier";
 
 const EventEmitter = require("events"),
       vorpal = require('vorpal')(),
@@ -16,6 +17,7 @@ export class RemoteCLI extends Client {
         let __this = this; //Keep context
 
         this.taskEvent = new EventEmitter();
+        this.identifier.clientType = ClientType.RemoteCLI;
 
         this.client.ready((serverProxy: any) => {
             console.log("Connected to server");
