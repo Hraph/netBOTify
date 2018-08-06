@@ -82,7 +82,14 @@ export class Server {
 
         this.server = new EurecaServer({
             authenticate: function(identifier: ClientIdentifier, next: Function){
-                identifier.clientId = this.user.clientId; //Save socket clientId
+                try {
+                    identifier.clientId = this.user.clientId; //Save socket clientId
+                    identifier.ip = this.connection.remoteAddress.ip;//Save client ip
+                }
+                catch (e){
+                    console.log("Unable to get client info ", e);
+                }
+
                 __this.clients.push(identifier);
                 next();
             },
