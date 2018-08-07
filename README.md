@@ -1,7 +1,7 @@
 ## netBOTify [WIP]
 
 netBOTify is a real-time and scalable server that lets you execute remote tasks over network using sub-workers.
-An unlimited number of clients (bots) can be connected anywhere in the internet jungle. 
+An unlimited number of clients (bots) can be connected anywhere from the internet jungle. 
 
 The tasks are executed remotely using a remote Command Line Interface.
 
