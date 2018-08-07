@@ -1,10 +1,12 @@
 {
-  "name": "networkerify",
+  "name": "netbotify",
   "version": "1.0.0",
-  "description": "A realtime and scalable remote tasks execution over WebSockets",
-  "main": "index.js",
+  "description": "A realtime and scalable remote tasks execution bot over network",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "typings": "dist/src/index.d.ts",
   "directories": {
-    "test": "tests"
+    "test": "test"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -12,13 +14,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hraph/netWorkerify.git"
+    "url": "git+https://github.com/hraph/netBOTify.git"
   },
   "keywords": [
     "realtime",
     "rpc",
     "scalable",
     "worker",
+    "bot",
     "server",
     "websocket",
     "socket",
@@ -27,7 +30,17 @@
   "author": "Hraph",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/hraph/netWorkerify/issues"
+    "url": "https://github.com/hraph/netBOTify/issues"
   },
-  "homepage": "https://github.com/hraph/netWorkerify#readme"
+  "homepage": "https://github.com/hraph/netBOTify#readme",
+  "dependencies": {
+    "console.table": "^0.10.0",
+    "engine.io": "^3.2.0",
+    "engine.io-client": "^3.2.1",
+    "eureca.io": "^0.8.2",
+    "express": "^4.16.3",
+    "log4js": "^3.0.4",
+    "vorpal": "^1.12.0"
+  },
+  "devDependencies": {}
 }
