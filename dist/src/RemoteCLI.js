@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const Client_1 = require("./Client");
 const ClientIdentifier_1 = require("./ClientIdentifier");
+const logger_1 = require("./logger");
 const EventEmitter = require("events"), vorpal = require('vorpal')(), cTable = require('console.table');
 class RemoteCLI extends Client_1.Client {
     constructor(config = {}) {
@@ -10,23 +11,29 @@ class RemoteCLI extends Client_1.Client {
         this.taskEvent = new EventEmitter();
         this.identifier.clientType = ClientIdentifier_1.ClientType.RemoteCLI;
         this.client.ready((serverProxy) => {
-            console.log("Connected to server");
+            logger_1.logger.cli().info("Connected to server");
             //Launch vorpal
             vorpal.show();
         });
         this.client.onConnectionLost(() => {
-            console.log("Disconnected to server\n");
+            logger_1.logger.cli().info("Disconnected to server\n");
             vorpal.hide();
         });
         this.client.onConnect(() => {
             if (this.client.isReady()) { //Client was ready but is now reconnecting : relaunch vorpal
-                console.log("Reconnected to server\n");
+                logger_1.logger.cli().info("Reconnected to server\n");
                 vorpal.show();
             }
         });
         this.client.onError(function (e) {
-            console.log('error', e);
+            if (e.type === "TransportError") {
+                logger_1.logger.cli().error("Unable to connect to server: code", e.description);
+            }
+            else {
+                logger_1.logger.cli().error('Unknown error', e);
+            }
         });
+        //Define config delimiter
         if (!this.config.delimiter)
             this.config.delimiter = "netBOTify";
         //Vorpal config
@@ -86,7 +93,7 @@ class RemoteCLI extends Client_1.Client {
         }
     }
     _serverInvalidCommandError(e) {
-        console.log("Error in command ", e);
+        logger_1.logger.cli().error("Error in command ", e);
     }
 }
 exports.RemoteCLI = RemoteCLI;

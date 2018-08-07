@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const Client_1 = require("./Client");
 const ClientIdentifier_1 = require("./ClientIdentifier");
+const logger_1 = require("./logger");
 const EventEmitter = require("events");
 class Worker extends Client_1.Client {
     constructor(config = {}) {
@@ -12,32 +13,34 @@ class Worker extends Client_1.Client {
         });
         this.client.onConnect((connection) => {
             //__this.identifier.clientId = connection.id;
-            console.log('Incomming connection');
+            logger_1.logger.worker().info('Incomming connection');
         });
         this.client.onMessage(function (data) {
-            console.log('Received data', data);
+            logger_1.logger.worker().debug('Received data', data);
         });
         this.client.onError(function (e) {
-            console.log('error', e);
+            if (e.type === "TransportError") {
+                logger_1.logger.worker().error("Unable to connect to server: code", e.description);
+            }
+            else {
+                logger_1.logger.worker().error('Unknown error', e);
+            }
         });
         this.client.onConnectionLost(function () {
-            console.log('connection lost ... will try to reconnect');
+            logger_1.logger.worker().warning('connection lost ... will try to reconnect');
         });
         this.client.onConnectionRetry(function (socket) {
-            console.log('retrying ...');
+            logger_1.logger.worker().warning('retrying ...');
         });
         this.client.onDisconnect(function (socket) {
-            console.log('Client disconnected ', socket.id);
-        });
-        this.client.on("reconnecting", () => {
-            console.log("update");
+            logger_1.logger.worker().info('Client disconnected ', socket.id);
         });
         this._internalActions();
         this.client.exports.launchTask = function () {
             //this.serverProxy is injected by eureca
             __this.taskEvent.emit("launchTask", __this.server);
             __this.server.task.taskLaunched().catch((e) => {
-                console.log("Unable to execute command ", e);
+                logger_1.logger.worker().error("Unable to execute command ", e);
             });
             __this.identifier.taskStatus = ClientIdentifier_1.TaskStatus.Running;
         };
@@ -45,7 +48,7 @@ class Worker extends Client_1.Client {
             //this.serverProxy is injected by eureca
             __this.taskEvent.emit("stopTask", __this.server);
             __this.server.task.taskStopped().catch((e) => {
-                console.log("Unable to execute command ", e);
+                logger_1.logger.worker().error("Unable to execute command ", e);
             });
             __this.identifier.taskStatus = ClientIdentifier_1.TaskStatus.Idle;
         };

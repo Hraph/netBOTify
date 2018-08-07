@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const ClientIdentifier_1 = require("./ClientIdentifier");
+const logger_1 = require("./logger");
 const EurecaServer = require("eureca.io").Server;
 const express = require('express'), app = express(), webServer = require('http').createServer(app);
 class Server {
@@ -11,7 +12,13 @@ class Server {
         let __this = this; //Keep context
         this.server = new EurecaServer({
             authenticate: function (identifier, next) {
-                identifier.clientId = this.user.clientId; //Save socket clientId
+                try {
+                    identifier.clientId = this.user.clientId; //Save socket clientId
+                    identifier.ip = this.connection.remoteAddress.ip; //Save client ip
+                }
+                catch (e) {
+                    logger_1.logger.server().error("Unable to get client info ", e);
+                }
                 __this.clients.push(identifier);
                 next();
             },
@@ -20,10 +27,10 @@ class Server {
         });
         this.server.attach(webServer);
         this.server.onMessage(function (msg) {
-            console.log('RECV', msg);
+            logger_1.logger.server().debug('RECV', msg);
         });
         this.server.onConnect(function (connection) {
-            console.log("connection", connection);
+            logger_1.logger.server().debug("connection", connection);
             let client = connection.clientProxy;
             setTimeout(() => {
                 //client.launchTask();
@@ -31,10 +38,10 @@ class Server {
         });
         this.server.onDisconnect(function (connection) {
             __this.clients = __this.clients.filter(client => client.clientId !== connection.id); //Remove client from clients
-            console.log('client %s disconnected', connection.id);
+            logger_1.logger.server().info('client %s disconnected', connection.id);
         });
         this.server.onError(function (e) {
-            console.log('an error occured', e);
+            logger_1.logger.server().error('an error occured', e);
         });
         this._internalActions(this);
     }
@@ -79,7 +86,7 @@ class Server {
                 let count = 0;
                 __this.clients.filter(client => client.clientType == ClientIdentifier_1.ClientType.Worker).forEach(client => {
                     __this.server.getClient(client.clientId).launchTask().catch((e) => {
-                        console.log("Unable to launch task ", e);
+                        logger_1.logger.server().error("Unable to launch task ", e);
                     });
                     ++count;
                 });
@@ -89,7 +96,7 @@ class Server {
                 let count = 0;
                 __this.clients.filter(client => client.clientType == ClientIdentifier_1.ClientType.Worker).forEach(client => {
                     __this.server.getClient(client.clientId).stopTask().catch((e) => {
-                        console.log("Unable to stop task ", e);
+                        logger_1.logger.server().error("Unable to stop task ", e);
                     });
                     ++count;
                 });

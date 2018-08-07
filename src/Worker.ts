@@ -1,11 +1,11 @@
 import {Client} from "./Client";
 import {TaskStatus} from "./ClientIdentifier";
+import { logger } from "./logger";
 
 const EventEmitter = require("events");
 
 /** @ignore */
 declare var require: any;
-
 
 export class Worker extends Client {
     private taskEvent: any;
@@ -22,33 +22,34 @@ export class Worker extends Client {
 
         this.client.onConnect((connection: any) => {
             //__this.identifier.clientId = connection.id;
-            console.log('Incomming connection');
+            logger.worker().info('Incomming connection');
         });
 
         this.client.onMessage(function (data: any) {
-            console.log('Received data', data);
+            logger.worker().debug('Received data', data);
         });
 
         this.client.onError(function (e: any) {
-            console.log('error', e);
+            if (e.type === "TransportError") {
+                logger.worker().error("Unable to connect to server: code", e.description);
+            }
+            else {
+                logger.worker().error('Unknown error', e);
+            }
         });
 
         this.client.onConnectionLost(function () {
-            console.log('connection lost ... will try to reconnect');
+            logger.worker().warning('connection lost ... will try to reconnect');
         });
 
         this.client.onConnectionRetry(function (socket: any) {
-            console.log('retrying ...');
+            logger.worker().warning('retrying ...');
 
         });
 
         this.client.onDisconnect(function (socket: any) {
-            console.log('Client disconnected ', socket.id);
+            logger.worker().info('Client disconnected ', socket.id);
         });
-
-        this.client.on("reconnecting", () => {
-            console.log("update");
-        } );
 
         this._internalActions();
 
@@ -58,7 +59,7 @@ export class Worker extends Client {
 
             __this.taskEvent.emit("launchTask", __this.server);
             __this.server.task.taskLaunched().catch((e: any) => {
-                console.log("Unable to execute command ", e);
+                logger.worker().error("Unable to execute command ", e);
             });
             __this.identifier.taskStatus = TaskStatus.Running;
         }
@@ -68,7 +69,7 @@ export class Worker extends Client {
 
             __this.taskEvent.emit("stopTask", __this.server);
             __this.server.task.taskStopped().catch((e: any) => {
-                console.log("Unable to execute command ", e);
+                logger.worker().error("Unable to execute command ", e);
             });
             __this.identifier.taskStatus = TaskStatus.Idle;
         }

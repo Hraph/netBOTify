@@ -1,5 +1,6 @@
 import {Client} from "./Client";
 import {ClientIdentifier, ClientType, TaskStatus} from "./ClientIdentifier";
+import { logger } from "./logger";
 
 const EventEmitter = require("events"),
       vorpal = require('vorpal')(),
@@ -20,28 +21,34 @@ export class RemoteCLI extends Client {
         this.identifier.clientType = ClientType.RemoteCLI;
 
         this.client.ready((serverProxy: any) => {
-            console.log("Connected to server");
+            logger.cli().info("Connected to server");
 
             //Launch vorpal
             vorpal.show();
         });
 
         this.client.onConnectionLost(() => {
-            console.log("Disconnected to server\n");
+            logger.cli().info("Disconnected to server\n");
             vorpal.hide();
         });
 
         this.client.onConnect(() => {
             if (this.client.isReady()) { //Client was ready but is now reconnecting : relaunch vorpal
-                console.log("Reconnected to server\n");
+                logger.cli().info("Reconnected to server\n");
                 vorpal.show();
             }
         });
 
         this.client.onError(function (e: any) {
-            console.log('error', e);
+            if (e.type === "TransportError") {
+                logger.cli().error("Unable to connect to server: code", e.description);
+            }
+            else {
+                logger.cli().error('Unknown error', e);
+            }
         });
-
+    
+        //Define config delimiter
         if (!this.config.delimiter)
             this.config.delimiter = "netBOTify";
 
@@ -106,7 +113,7 @@ export class RemoteCLI extends Client {
     }
 
     private _serverInvalidCommandError(e: any){
-        console.log("Error in command ", e);
+        logger.cli().error("Error in command ", e);
     }
 
 }

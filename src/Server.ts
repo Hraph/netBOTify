@@ -1,4 +1,5 @@
 import {ClientIdentifier, ClientType, TaskStatus} from "./ClientIdentifier";
+import { logger } from "./logger";
 
 const EurecaServer = require("eureca.io").Server;
 const express = require('express')
@@ -57,7 +58,7 @@ export class Server {
                 let count = 0;
                 __this.clients.filter(client => client.clientType == ClientType.Worker).forEach(client => {
                     __this.server.getClient(client.clientId).launchTask().catch((e: any) => {
-                        console.log("Unable to launch task ", e);
+                        logger.server().error("Unable to launch task ", e);
                     });
                     ++count;
                 });
@@ -67,7 +68,7 @@ export class Server {
                 let count = 0;
                 __this.clients.filter(client => client.clientType == ClientType.Worker).forEach(client => {
                     __this.server.getClient(client.clientId).stopTask().catch((e: any) => {
-                        console.log("Unable to stop task ", e);
+                        logger.server().error("Unable to stop task ", e);
                     });
                     ++count;
                 });
@@ -87,7 +88,7 @@ export class Server {
                     identifier.ip = this.connection.remoteAddress.ip;//Save client ip
                 }
                 catch (e){
-                    console.log("Unable to get client info ", e);
+                    logger.server().error("Unable to get client info ", e);
                 }
 
                 __this.clients.push(identifier);
@@ -99,11 +100,11 @@ export class Server {
         this.server.attach(webServer);
 
         this.server.onMessage(function (msg: any) {
-            console.log('RECV', msg);
+            logger.server().debug('RECV', msg);
         });
 
         this.server.onConnect(function(connection: any) {
-           console.log("connection", connection);
+           logger.server().debug("connection", connection);
            let client = connection.clientProxy;
             setTimeout(() => {
                 //client.launchTask();
@@ -113,11 +114,11 @@ export class Server {
 
         this.server.onDisconnect(function (connection: any) {
             __this.clients = __this.clients.filter(client => client.clientId !== connection.id); //Remove client from clients
-            console.log('client %s disconnected', connection.id);
+            logger.server().info('client %s disconnected', connection.id);
         });
 
         this.server.onError(function (e: any) {
-            console.log('an error occured', e);
+            logger.server().error('an error occured', e);
         });
 
         this._internalActions(this);
