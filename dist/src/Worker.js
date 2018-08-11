@@ -10,13 +10,10 @@ class Worker extends Client_1.Client {
         let __this = this; //Keep context
         this.taskEvent = new EventEmitter();
         this.client.ready((serverProxy) => {
+            logger_1.logger.worker().info('Connected to server');
         });
-        this.client.onConnect((connection) => {
-            //__this.identifier.clientId = connection.id;
-            logger_1.logger.worker().info('Incomming connection');
-        });
-        this.client.onMessage(function (data) {
-            logger_1.logger.worker().debug('Received data', data);
+        this.client.onUnhandledMessage(function (data) {
+            logger_1.logger.worker().debug('Received message: ', data);
         });
         this.client.onError(function (e) {
             if (e.type === "TransportError") {

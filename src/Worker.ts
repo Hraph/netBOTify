@@ -17,16 +17,11 @@ export class Worker extends Client {
         this.taskEvent = new EventEmitter();
 
         this.client.ready((serverProxy: any) => { //Triggered when authenticated
-
+            logger.worker().info('Connected to server');
         });
 
-        this.client.onConnect((connection: any) => {
-            //__this.identifier.clientId = connection.id;
-            logger.worker().info('Incomming connection');
-        });
-
-        this.client.onMessage(function (data: any) {
-            logger.worker().debug('Received data', data);
+        this.client.onUnhandledMessage(function (data: any) {
+            logger.worker().debug('Received message: ', data);
         });
 
         this.client.onError(function (e: any) {

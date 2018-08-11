@@ -19,7 +19,8 @@ class Client {
         //Create Eureca client
         this.client = new EurecaClient({
             uri: (this.config.uri) ? this.config.uri : "http://localhost:8000/",
-            prefix: "nbfy"
+            prefix: "nbfy",
+            autoConnect: (this.config.autoConnect) ? true : false,
         });
         this.client.ready((serverProxy) => {
             this.server = serverProxy;
@@ -55,6 +56,13 @@ class Client {
      */
     stopPing() {
         clearInterval(this.pingInterval);
+    }
+    /**
+     * Manually connect to the server
+     * @public
+     */
+    connect() {
+        this.client.connect();
     }
     /**
      * Defines default Client config
