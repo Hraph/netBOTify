@@ -54,7 +54,7 @@ export class Client {
         this.client = new EurecaClient({
             uri: (this.config.uri) ? this.config.uri : "http://localhost:8000/",
             prefix: "nbfy",
-            autoConnect: (this.config.autoConnect) ? true : false,
+            autoConnect: (this.config.autoConnect) ? this.config.autoConnect : true,
         });
 
         this.client.ready((serverProxy: any) => { //Triggered when authenticated
