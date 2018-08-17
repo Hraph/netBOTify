@@ -7,4 +7,8 @@ let cli = new RemoteCLI_1.RemoteCLI({
     uri: "http://localhost:8000/",
     identifier: identifier
 });
+cli.addCommand("test", "Write a test", (args, callback) => {
+    console.log("TEST");
+    callback();
+});
 //# sourceMappingURL=cli.js.map

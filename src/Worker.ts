@@ -72,6 +72,7 @@ export class Worker extends Client {
             });
             __this.identifier.taskStatus = TaskStatus.Idle;
         }
+        
     }
 
     public onLaunchTask(callback: (server: any) => void){

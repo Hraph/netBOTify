@@ -82,6 +82,14 @@ export class RemoteCLI extends Client {
             });
 
     }
+    
+    public addCommand(commandWord: string, commandDescription: string, callback: (args: any, callback: Function) => void){
+        vorpal
+            .command(commandWord, commandDescription)
+            .action((vorpalArgs: any, vorpalCallback: Function) => {
+                callback(vorpalArgs, vorpalCallback);   
+            });
+    }
 
     private _executePrintDistantCommand(commandName: string, callback: Function){
         try {

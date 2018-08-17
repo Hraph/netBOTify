@@ -65,6 +65,13 @@ class RemoteCLI extends Client_1.Client {
             this._executeTableDistantCommand("getCLIs", callback);
         });
     }
+    addCommand(commandWord, commandDescription, callback) {
+        vorpal
+            .command(commandWord, commandDescription)
+            .action((vorpalArgs, vorpalCallback) => {
+            callback(vorpalArgs, vorpalCallback);
+        });
+    }
     _executePrintDistantCommand(commandName, callback) {
         try {
             this.server.cli[commandName]().then((result) => {
