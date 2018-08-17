@@ -28,8 +28,11 @@ const Netbotify = require("netbotify");
 
 // Create a worker
 let worker = new Netbotify.Worker({
-    uri: "http://localhost:8000/" // Server uri to connect to
+    uri: "http://localhost:8000/", // Server uri to connect to
+    autoConnect: false // Auto-connect to server (default: true)
 });
+
+cli.connect(); // In case of autoConnect: false
 
 // Add task content on launch
 worker.onLaunchTask((server: any) => {
@@ -53,8 +56,11 @@ const Netbotify = require("netbotify");
 //Create a CLI
 let cli = new Netbotify.RemoteCLI({
     uri: "http://localhost:8000/", // Server uri to connect to
-    delimiter: "myApp" // CLI shell prefix
+    delimiter: "myApp", // CLI shell prefix
+    autoConnect: false // Auto-connect to server (default: true)
 });
+
+cli.connect(); // In case of autoConnect: false
 
 ~~~~
 

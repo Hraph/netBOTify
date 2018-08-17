@@ -1,5 +1,6 @@
 import {ClientIdentifier, ClientType, TaskStatus} from "./ClientIdentifier";
 import { logger } from "./logger";
+import { TaskParameter } from "./TaskParameter";
 
 const EurecaServer = require("eureca.io").Server;
 const express = require('express')
@@ -14,6 +15,7 @@ export class Server {
     public clients: ClientIdentifier[] = [];
     private config: any = {};
     private server: any;
+    private taskParameters: TaskParameter[];
     private _internalActions(__this: Server){
         this.server.exports.ping = function() {
             __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
@@ -54,17 +56,30 @@ export class Server {
             getCLIs: function() {
                 return __this.clients.filter(client => client.clientType == ClientType.RemoteCLI);
             },
-            launchTasks: function () {
+            getParameters: function() {
+                return __this.taskParameters;
+            },
+            launchTask: function (parameters: TaskParameter[]) {
+                //Add value to local tasks
+                __this.taskParameters.forEach((parameter: TaskParameter) => {
+                    let foundParameter = parameters.find((item: TaskParameter) => { // Match local parameter with argument parameter
+                        return item.key == parameter.key
+                    });
+
+                    if (typeof foundParameter !== "undefined") // Change value of local parameter
+                        parameter.value = foundParameter.value;
+                });
+
                 let count = 0;
-                __this.clients.filter(client => client.clientType == ClientType.Worker).forEach(client => {
-                    __this.server.getClient(client.clientId).launchTask().catch((e: any) => {
+                __this.clients.filter(client => client.clientType == ClientType.Worker).forEach(client => { // Get Workers clients
+                    __this.server.getClient(client.clientId).launchTask(__this.taskParameters).catch((e: any) => {
                         logger.server().error("Unable to launch task ", e);
                     });
                     ++count;
                 });
                 return count + " tasks launched successfully";
             },
-            stopTasks: function () {
+            stopTask: function () {
                 let count = 0;
                 __this.clients.filter(client => client.clientType == ClientType.Worker).forEach(client => {
                     __this.server.getClient(client.clientId).stopTask().catch((e: any) => {
@@ -79,6 +94,7 @@ export class Server {
 
     constructor(config: any = {}){
         this.config = config;
+        this.taskParameters = [];
         let __this = this; //Keep context
 
         this.server = new EurecaServer({
@@ -131,6 +147,10 @@ export class Server {
         if (!this.config.port)
             this.config.port = 8000;
         webServer.listen(this.config.port);
+    }
+    
+    public addTaskParameter(parameter: TaskParameter){
+        this.taskParameters.push(parameter);
     }
 
     public addServerAction(name: string, callback: Function){

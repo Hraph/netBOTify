@@ -7,7 +7,7 @@ let worker = new Worker_1.Worker({
     uri: "http://localhost:8000/",
     identifier: identifier
 });
-worker.onLaunchTask((server) => {
-    console.log("launch", server);
+worker.onLaunchTask((parameters, server) => {
+    console.log("launch", parameters);
 });
 //# sourceMappingURL=worker.js.map

@@ -37,9 +37,9 @@ class Worker extends Client_1.Client {
             logger_1.logger.worker().info('Client disconnected ', socket.id);
         });
         this._internalActions();
-        this.client.exports.launchTask = function () {
+        this.client.exports.launchTask = function (parameters) {
             //this.serverProxy is injected by eureca
-            __this.taskEvent.emit("launchTask", __this.server);
+            __this.taskEvent.emit("launchTask", parameters, __this.server);
             __this.server.task.taskLaunched().catch((e) => {
                 logger_1.logger.worker().error("Unable to execute command ", e);
             });

@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const Client_1 = require("./Client");
 const ClientIdentifier_1 = require("./ClientIdentifier");
 const logger_1 = require("./logger");
+const TaskParameter_1 = require("./TaskParameter");
 const EventEmitter = require("events"), vorpal = require('vorpal')(), cTable = require('console.table');
 class RemoteCLI extends Client_1.Client {
     constructor(config = {}) {
@@ -45,14 +46,26 @@ class RemoteCLI extends Client_1.Client {
             this._executePrintDistantCommand("ping", callback);
         });
         vorpal
-            .command('launch', 'Launch the tasks on workers.')
+            .command('launch', 'Launch the task on workers.')
             .action((args, callback) => {
-            this._executePrintDistantCommand("launchTasks", callback);
+            try {
+                let parameters = [];
+                parameters.push(new TaskParameter_1.TaskParameter("id", null, "other"));
+                this.server.cli["launchTask"](parameters).then((result) => {
+                    console.log(result);
+                });
+            }
+            catch (e) {
+                this._serverInvalidCommandError(e);
+            }
+            finally {
+                callback();
+            }
         });
         vorpal
-            .command('stop', 'Stop the tasks on workers.')
+            .command('stop', 'Stop the task on workers.')
             .action((args, callback) => {
-            this._executePrintDistantCommand("stopTasks", callback);
+            this._executePrintDistantCommand("stopTask", callback);
         });
         vorpal
             .command('workers', 'Get server connected workers')

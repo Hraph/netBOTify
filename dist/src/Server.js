@@ -9,6 +9,7 @@ class Server {
         this.clients = [];
         this.config = {};
         this.config = config;
+        this.taskParameters = [];
         let __this = this; //Keep context
         this.server = new EurecaServer({
             authenticate: function (identifier, next) {
@@ -82,17 +83,31 @@ class Server {
             getCLIs: function () {
                 return __this.clients.filter(client => client.clientType == ClientIdentifier_1.ClientType.RemoteCLI);
             },
-            launchTasks: function () {
+            getParameters: function () {
+                return __this.taskParameters;
+            },
+            launchTask: function (parameters) {
+                //Add value to local tasks
+                __this.taskParameters.forEach((parameter) => {
+                    let foundParameter = parameters.find((item) => {
+                        return item.key == parameter.key;
+                    });
+                    console.log(foundParameter);
+                    console.log(__this.taskParameters);
+                    if (typeof foundParameter !== "undefined")
+                        parameter.value = foundParameter.value;
+                });
+                console.log(__this.taskParameters);
                 let count = 0;
                 __this.clients.filter(client => client.clientType == ClientIdentifier_1.ClientType.Worker).forEach(client => {
-                    __this.server.getClient(client.clientId).launchTask().catch((e) => {
+                    __this.server.getClient(client.clientId).launchTask(__this.taskParameters).catch((e) => {
                         logger_1.logger.server().error("Unable to launch task ", e);
                     });
                     ++count;
                 });
                 return count + " tasks launched successfully";
             },
-            stopTasks: function () {
+            stopTask: function () {
                 let count = 0;
                 __this.clients.filter(client => client.clientType == ClientIdentifier_1.ClientType.Worker).forEach(client => {
                     __this.server.getClient(client.clientId).stopTask().catch((e) => {
@@ -111,6 +126,9 @@ class Server {
         if (!this.config.port)
             this.config.port = 8000;
         webServer.listen(this.config.port);
+    }
+    addTaskParameter(parameter) {
+        this.taskParameters.push(parameter);
     }
     addServerAction(name, callback) {
         this.server.exports[name] = callback;
