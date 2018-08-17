@@ -16,8 +16,13 @@ export class Worker extends Client {
 
         this.taskEvent = new EventEmitter();
 
-        this.client.ready((serverProxy: any) => { //Triggered when authenticated
+        this.client.ready((serverProxy: any) => { //Triggered ONCE when first time authenticated
             logger.worker().info('Connected to server');
+        });
+        
+        this.client.onConnect((client: any) => {
+            if (this.client.isReady()) //Client reconnected
+                logger.worker().info('Reconnected to server');
         });
 
         this.client.onUnhandledMessage(function (data: any) {
@@ -29,16 +34,16 @@ export class Worker extends Client {
                 logger.worker().error("Unable to connect to server: code", e.description);
             }
             else {
-                logger.worker().error('Unknown error', e);
+                logger.worker().error('Unknown error ', e);
             }
         });
 
         this.client.onConnectionLost(function () {
-            logger.worker().warning('connection lost ... will try to reconnect');
+            logger.worker().warn('Connection lost ... will try to reconnect');
         });
 
         this.client.onConnectionRetry(function (socket: any) {
-            logger.worker().warning('retrying ...');
+            logger.worker().warn('retrying ...');
 
         });
 
@@ -47,7 +52,6 @@ export class Worker extends Client {
         });
 
         this._internalActions();
-
 
         this.client.exports.launchTask = function() {
             //this.serverProxy is injected by eureca

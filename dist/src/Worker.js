@@ -12,6 +12,10 @@ class Worker extends Client_1.Client {
         this.client.ready((serverProxy) => {
             logger_1.logger.worker().info('Connected to server');
         });
+        this.client.onConnect((client) => {
+            if (this.client.isReady()) //Client reconnected
+                logger_1.logger.worker().info('Reconnected to server');
+        });
         this.client.onUnhandledMessage(function (data) {
             logger_1.logger.worker().debug('Received message: ', data);
         });
@@ -20,14 +24,14 @@ class Worker extends Client_1.Client {
                 logger_1.logger.worker().error("Unable to connect to server: code", e.description);
             }
             else {
-                logger_1.logger.worker().error('Unknown error', e);
+                logger_1.logger.worker().error('Unknown error ', e);
             }
         });
         this.client.onConnectionLost(function () {
-            logger_1.logger.worker().warning('connection lost ... will try to reconnect');
+            logger_1.logger.worker().warn('Connection lost ... will try to reconnect');
         });
         this.client.onConnectionRetry(function (socket) {
-            logger_1.logger.worker().warning('retrying ...');
+            logger_1.logger.worker().warn('retrying ...');
         });
         this.client.onDisconnect(function (socket) {
             logger_1.logger.worker().info('Client disconnected ', socket.id);

@@ -19,6 +19,7 @@ class ClientIdentifier {
         this.latestReceivedPingTimestamp = 0;
         this.taskStatus = TaskStatus.Idle;
         this.ip = null;
+        this.reconnect = 0;
         this.groupId = groupId;
         this.instanceId = instanceId;
         this.token = this._generateHash();

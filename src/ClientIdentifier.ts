@@ -20,6 +20,7 @@ export class ClientIdentifier {
     public latestReceivedPingTimestamp: number = 0;
     public taskStatus: TaskStatus = TaskStatus.Idle;
     public ip: any = null;
+    public reconnect: number = 0;
 
 
     constructor(groupId: string, instanceId: string) {

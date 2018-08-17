@@ -27,8 +27,10 @@ class Client {
             this.launchPing(serverProxy);
         });
         this.client.onConnect((client) => {
+            if (this.client.isReady()) //Client was already connected but is now reconnecting : increment reconnect count
+                ++this.identifier.reconnect;
             this.client.authenticate(this.identifier); //Authenticate when connect
-            if (this.client.isReady()) //Client was ready but is now reconnecting : relaunch ping
+            if (this.client.isReady()) //Client was already connected but is now reconnecting : now relaunch ping while it's authenticated
                 this.launchPing(client._proxy);
         });
         this.client.onDisconnect((socket) => {
