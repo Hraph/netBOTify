@@ -7,6 +7,7 @@ class TaskParameter {
         this.key = key;
         this.defaultValue = defaultValue;
         this.value = value;
+        this.message = this.key.charAt(0).toUpperCase() + this.key.slice(1); //Uppercase first letter only and add default value
     }
 }
 exports.TaskParameter = TaskParameter;

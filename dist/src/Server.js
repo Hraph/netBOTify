@@ -86,18 +86,18 @@ class Server {
             getParameters: function () {
                 return __this.taskParameters;
             },
-            launchTask: function (parameters) {
-                //Add value to local tasks
-                __this.taskParameters.forEach((parameter) => {
-                    let foundParameter = parameters.find((item) => {
-                        return item.key == parameter.key;
+            launchTask: function (parameters = []) {
+                //Treat input parameters
+                if (parameters.length !== 0) {
+                    //Add value to local tasks
+                    __this.taskParameters.forEach((parameter) => {
+                        let foundParameter = parameters.find((item) => {
+                            return item.key == parameter.key;
+                        });
+                        if (typeof foundParameter !== "undefined") // Change value of local parameter
+                            parameter.value = foundParameter.value;
                     });
-                    console.log(foundParameter);
-                    console.log(__this.taskParameters);
-                    if (typeof foundParameter !== "undefined")
-                        parameter.value = foundParameter.value;
-                });
-                console.log(__this.taskParameters);
+                }
                 let count = 0;
                 __this.clients.filter(client => client.clientType == ClientIdentifier_1.ClientType.Worker).forEach(client => {
                     __this.server.getClient(client.clientId).launchTask(__this.taskParameters).catch((e) => {
