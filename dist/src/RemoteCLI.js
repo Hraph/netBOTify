@@ -44,7 +44,7 @@ class RemoteCLI extends Client_1.Client {
         vorpal
             .command('ping', 'Ping the server.')
             .action((args, callback) => {
-            __this._executePrintDistantCommand("ping").then(() => {
+            __this._executeDistantCommand("ping").then(() => {
                 callback();
             });
         });
@@ -62,7 +62,10 @@ class RemoteCLI extends Client_1.Client {
             }
             //Parameters has been set
             Promise.all(setParametersCommandPromise).then(() => {
-                __this._executePrintDistantCommand("launchTask", __this.taskParameters).then(() => {
+                __this._executeDistantCommand("launchTask", __this.taskParameters) //Execute task with parameters
+                    .catch(__this._serverInvalidCommandError)
+                    .then((result) => {
+                    vorpal.log("%d task(s) launched of %d", result.success, result.total);
                     callback();
                 });
             });
@@ -81,7 +84,10 @@ class RemoteCLI extends Client_1.Client {
         vorpal
             .command('stop', 'Stop the task on workers.')
             .action((args, callback) => {
-            __this._executePrintDistantCommand("stopTask").then(() => {
+            __this._executeDistantCommand("stopTask")
+                .catch(__this._serverInvalidCommandError)
+                .then((result) => {
+                vorpal.log("%d task(s) stopped of %d", result.success, result.total);
                 callback();
             });
         });
@@ -89,7 +95,11 @@ class RemoteCLI extends Client_1.Client {
         vorpal
             .command('workers', 'Get server connected workers')
             .action((args, callback) => {
-            __this._executeTableDistantCommand("getWorkers").then(() => {
+            __this._executeDistantCommand("getWorkers")
+                .catch(__this._serverInvalidCommandError)
+                .then((result) => {
+                vorpal.log(result.length + " items");
+                vorpal.log(cTable.getTable(result));
                 callback();
             });
         });
@@ -97,7 +107,11 @@ class RemoteCLI extends Client_1.Client {
         vorpal
             .command('clis', 'Get server connected CLIs')
             .action((args, callback) => {
-            __this._executeTableDistantCommand("getCLIs").then(() => {
+            __this._executeDistantCommand("getCLIs")
+                .catch(__this._serverInvalidCommandError)
+                .then((result) => {
+                vorpal.log(result.length + " items");
+                vorpal.log(cTable.getTable(result));
                 callback();
             });
         });
@@ -161,25 +175,10 @@ class RemoteCLI extends Client_1.Client {
             }).catch(reject);
         });
     }
-    _executePrintDistantCommand(commandName, ...parameters) {
+    _executeDistantCommand(commandName, ...parameters) {
         return new Promise((resolve, reject) => {
             try {
                 this.server.cli[commandName](...parameters).then((result) => {
-                    vorpal.log(result);
-                    resolve(result);
-                });
-            }
-            catch (e) {
-                reject(e);
-            }
-        });
-    }
-    _executeTableDistantCommand(commandName, ...parameters) {
-        return new Promise((resolve, reject) => {
-            try {
-                this.server.cli[commandName](...parameters).then((result) => {
-                    vorpal.log(result.length + " items");
-                    vorpal.log(cTable.getTable(result));
                     resolve(result);
                 });
             }

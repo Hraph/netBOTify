@@ -83,7 +83,10 @@ class Server {
             getParameters: function () {
                 return __this.taskParameters;
             },
-            launchTask: function (parameters = []) {
+            launchTask: function (parameters = [], forceLaunch = false) {
+                let clientPromises = [];
+                let context = this;
+                context.async = true; //Define an asynchronous return
                 //Treat input parameters
                 if (parameters.length !== 0) {
                     //Add value to local tasks
@@ -95,26 +98,42 @@ class Server {
                             parameter.value = foundParameter.value;
                     });
                 }
-                let count = 0;
+                let total = 0;
                 __this.clients.filter(client => client.clientType == ClientIdentifier_1.ClientType.Worker).forEach(client => {
-                    __this.server.getClient(client.clientId).launchTask(__this.taskParameters).catch((e) => {
-                        logger_1.logger.server().error("Unable to launch task ", e);
-                    }).then(() => {
-                        ++count;
+                    if (forceLaunch || client.taskStatus != ClientIdentifier_1.TaskStatus.Running) { // Launch task only if task is not currently running
+                        clientPromises.push(__this.server.getClient(client.clientId).launchTask(__this.taskParameters)); //Launch task
+                    }
+                    ++total;
+                });
+                Promise.all(clientPromises).catch((e) => {
+                    logger_1.logger.server().error("Unable to launch task ", e);
+                }).then((results) => {
+                    context.return({
+                        success: results.length,
+                        total: total
                     });
                 });
-                return count + " task(s) launched successfully";
             },
             stopTask: function () {
-                let count = 0;
+                let clientPromises = [];
+                let context = this;
+                context.async = true; //Define an asynchronous return
+                let total = 0;
                 __this.clients.filter(client => client.clientType == ClientIdentifier_1.ClientType.Worker).forEach(client => {
-                    __this.server.getClient(client.clientId).stopTask().catch((e) => {
-                        logger_1.logger.server().error("Unable to stop task ", e);
-                    }).then(() => {
-                        ++count;
+                    if (client.taskStatus != ClientIdentifier_1.TaskStatus.Idle) { // Stop task only if task is not currently stopped
+                        clientPromises.push(__this.server.getClient(client.clientId).stopTask()); //Stop task
+                    }
+                    ++total;
+                });
+                Promise.all(clientPromises).catch((e) => {
+                    logger_1.logger.server().error("Unable to stop task ", e);
+                    //TODO Send error to CLI
+                }).then((results) => {
+                    context.return({
+                        success: results.length,
+                        total: total
                     });
                 });
-                return count + " task(s) stopped successfully";
             }
         };
     }

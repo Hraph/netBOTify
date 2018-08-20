@@ -62,7 +62,7 @@ export class RemoteCLI extends Client {
         vorpal
             .command('ping', 'Ping the server.')
             .action((args: any, callback: Function) => {
-                __this._executePrintDistantCommand("ping").then(() => {
+                __this._executeDistantCommand("ping").then(() => {
                     callback();
                 });
             });
@@ -84,10 +84,14 @@ export class RemoteCLI extends Client {
                 
                 //Parameters has been set
                 Promise.all(setParametersCommandPromise).then(() => {
-                    __this._executePrintDistantCommand("launchTask", __this.taskParameters).then(() => { //Execute task with parameters
-                        callback();
-                    });
-                })
+                    __this._executeDistantCommand("launchTask", __this.taskParameters)  //Execute task with parameters
+                        .catch(__this._serverInvalidCommandError)
+                        .then((result: any) => {
+                            vorpal.log("%d bot(s)'task launched of %d", result.success, result.total);
+                            callback();
+                        });
+                });
+                
             });
             
         //Parameters
@@ -105,27 +109,38 @@ export class RemoteCLI extends Client {
         vorpal
             .command('stop', 'Stop the task on workers.')
             .action((args: any, callback: Function) => {
-                __this._executePrintDistantCommand("stopTask").then(() => {
-                    callback();
-                });
+                __this._executeDistantCommand("stopTask")
+                    .catch(__this._serverInvalidCommandError)
+                    .then((result: any) => {
+                        vorpal.log("%d bot(s)'task stopped of %d", result.success, result.total);
+                        callback();
+                    });
             });
             
         //Workers
         vorpal
             .command('workers', 'Get server connected workers')
             .action((args: any, callback: Function) => {
-                __this._executeTableDistantCommand("getWorkers").then(() => {
-                    callback();
-                });
+                __this._executeDistantCommand("getWorkers")
+                    .catch(__this._serverInvalidCommandError)
+                    .then((result: any) => {
+                        vorpal.log(result.length + " items");
+                        vorpal.log(cTable.getTable(result));
+                        callback();
+                    });
             });
         
         //CLIs
         vorpal
             .command('clis', 'Get server connected CLIs')
             .action((args: any, callback: Function) => {
-                __this._executeTableDistantCommand("getCLIs").then(() => {
-                    callback();
-                });
+                __this._executeDistantCommand("getCLIs")
+                    .catch(__this._serverInvalidCommandError)
+                    .then((result: any) => {
+                        vorpal.log(result.length + " items");
+                        vorpal.log(cTable.getTable(result));
+                        callback();
+                    });
             });
 
     }
@@ -202,26 +217,10 @@ export class RemoteCLI extends Client {
         })
     }
 
-    private _executePrintDistantCommand(commandName: string, ...parameters: any[]){
+    private _executeDistantCommand(commandName: string, ...parameters: any[]){
         return new Promise((resolve, reject) => {
             try {
                 this.server.cli[commandName](...parameters).then((result: any) => {
-                    vorpal.log(result);
-                    resolve(result);
-                });
-            }
-            catch(e){
-                reject(e);
-            }
-        });
-    }
-
-    private _executeTableDistantCommand(commandName: string, ...parameters: any[]){
-        return new Promise((resolve, reject) => {
-            try {
-                this.server.cli[commandName](...parameters).then((result: any) => {
-                    vorpal.log(result.length + " items");
-                    vorpal.log(cTable.getTable(result));
                     resolve(result);
                 });
             }
