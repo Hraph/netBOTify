@@ -27,19 +27,16 @@ class Server {
             allow: ["launchTask", "stopTask", "statusTask"]
         });
         this.server.attach(webServer);
-        this.server.onMessage(function (msg) {
-            logger_1.logger.server().debug('RECV', msg);
+        this.server.on("unhandledMessage", function (msg) {
+            logger_1.logger.server().debug('Received message: ', msg);
         });
         this.server.onConnect(function (connection) {
-            logger_1.logger.server().debug("connection", connection);
+            logger_1.logger.server().debug('Client %s connected', connection.id);
             let client = connection.clientProxy;
-            setTimeout(() => {
-                //client.launchTask();
-            }, 3000);
         });
         this.server.onDisconnect(function (connection) {
             __this.clients = __this.clients.filter(client => client.clientId !== connection.id); //Remove client from clients
-            logger_1.logger.server().info('client %s disconnected', connection.id);
+            logger_1.logger.server().info('Client %s disconnected', connection.id);
         });
         this.server.onError(function (e) {
             logger_1.logger.server().error('an error occured', e);
@@ -102,20 +99,22 @@ class Server {
                 __this.clients.filter(client => client.clientType == ClientIdentifier_1.ClientType.Worker).forEach(client => {
                     __this.server.getClient(client.clientId).launchTask(__this.taskParameters).catch((e) => {
                         logger_1.logger.server().error("Unable to launch task ", e);
+                    }).then(() => {
+                        ++count;
                     });
-                    ++count;
                 });
-                return count + " tasks launched successfully";
+                return count + " task(s) launched successfully";
             },
             stopTask: function () {
                 let count = 0;
                 __this.clients.filter(client => client.clientType == ClientIdentifier_1.ClientType.Worker).forEach(client => {
                     __this.server.getClient(client.clientId).stopTask().catch((e) => {
                         logger_1.logger.server().error("Unable to stop task ", e);
+                    }).then(() => {
+                        ++count;
                     });
-                    ++count;
                 });
-                return count + " tasks stopped successfully";
+                return count + " task(s) stopped successfully";
             }
         };
     }

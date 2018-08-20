@@ -5,8 +5,8 @@ export declare class Server {
     private config;
     private server;
     private taskParameters;
-    private _internalActions;
     constructor(config?: any);
+    private _internalActions;
     /**
      * Launch server
      */

@@ -36,7 +36,15 @@ class Worker extends Client_1.Client {
         this.client.onDisconnect(function (socket) {
             logger_1.logger.worker().info('Client disconnected ', socket.id);
         });
-        this._internalActions();
+        this._internalActions(this);
+    }
+    onLaunchTask(callback) {
+        this.taskEvent.on("launchTask", callback);
+    }
+    onStopTask(callback) {
+        this.taskEvent.on("stopTask", callback);
+    }
+    _internalActions(__this) {
         this.client.exports.launchTask = function (parameters) {
             //this.serverProxy is injected by eureca
             __this.taskEvent.emit("launchTask", parameters, __this.server);
@@ -53,14 +61,6 @@ class Worker extends Client_1.Client {
             });
             __this.identifier.taskStatus = ClientIdentifier_1.TaskStatus.Idle;
         };
-    }
-    onLaunchTask(callback) {
-        this.taskEvent.on("launchTask", callback);
-    }
-    onStopTask(callback) {
-        this.taskEvent.on("stopTask", callback);
-    }
-    _internalActions() {
     }
 }
 exports.Worker = Worker;

@@ -122,6 +122,7 @@ class RemoteCLI extends Client_1.Client {
                 //Parameters are retrieved: ready to ask values
                 if (this.taskParameters == null || this.taskParameters.length === 0) {
                     vorpal.log("No parameters to manage.");
+                    vorpal.log("----------------------------");
                     resolve();
                 }
                 else {
@@ -143,7 +144,8 @@ class RemoteCLI extends Client_1.Client {
                         this.taskParameters.filter((parameter) => {
                             return answers.hasOwnProperty(parameter.key);
                         }).forEach((parameter) => {
-                            parameter.value = answers[parameter.key];
+                            if (answers[parameter.key] !== "") //Not empty value
+                                parameter.value = answers[parameter.key];
                         });
                         resolve();
                     });

@@ -7,4 +7,4 @@ let server = new Server({
 
 server.connect();
 
-server.addTaskParameter(new TaskParameter("id", "dd"));
+//server.addTaskParameter(new TaskParameter("id", "dd"));

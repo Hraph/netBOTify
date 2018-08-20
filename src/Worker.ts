@@ -45,15 +45,25 @@ export class Worker extends Client {
 
         this.client.onConnectionRetry(function (socket: any) {
             logger.worker().warn('retrying ...');
-
         });
 
         this.client.onDisconnect(function (socket: any) {
             logger.worker().info('Client disconnected ', socket.id);
         });
 
-        this._internalActions();
+        this._internalActions(this);
+    }
 
+    public onLaunchTask(callback: (parameters: TaskParameter[], server: any) => void){
+        this.taskEvent.on("launchTask", callback);
+    }
+
+    public onStopTask(callback: (server: any) => void){
+        this.taskEvent.on("stopTask", callback);
+    }
+
+
+    private _internalActions(__this: Worker){
         this.client.exports.launchTask = function(parameters: TaskParameter[]) {
             //this.serverProxy is injected by eureca
             
@@ -73,19 +83,5 @@ export class Worker extends Client {
             });
             __this.identifier.taskStatus = TaskStatus.Idle;
         }
-        
-    }
-
-    public onLaunchTask(callback: (parameters: TaskParameter[], server: any) => void){
-        this.taskEvent.on("launchTask", callback);
-    }
-
-    public onStopTask(callback: (server: any) => void){
-        this.taskEvent.on("stopTask", callback);
-    }
-
-
-    private _internalActions(){
-
     }
 }

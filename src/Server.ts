@@ -16,6 +16,51 @@ export class Server {
     private config: any = {};
     private server: any;
     private taskParameters: TaskParameter[];
+
+    constructor(config: any = {}){
+        this.config = config;
+        this.taskParameters = [];
+        let __this = this; //Keep context
+
+        this.server = new EurecaServer({
+            authenticate: function(identifier: ClientIdentifier, next: Function){
+                try {
+                    identifier.clientId = this.user.clientId; //Save socket clientId
+                    identifier.ip = this.connection.remoteAddress.ip;//Save client ip
+                }
+                catch (e){
+                    logger.server().error("Unable to get client info ", e);
+                }
+
+                __this.clients.push(identifier);
+                next();
+            },
+            prefix: "nbfy",
+            allow: ["launchTask", "stopTask", "statusTask"]
+        });
+        this.server.attach(webServer);
+
+        this.server.on("unhandledMessage", function (msg: any) {
+            logger.server().debug('Received message: ', msg);
+        });
+
+        this.server.onConnect(function(connection: any) {
+           logger.server().debug('Client %s connected', connection.id);
+           let client = connection.clientProxy;
+        });
+
+        this.server.onDisconnect(function (connection: any) {
+            __this.clients = __this.clients.filter(client => client.clientId !== connection.id); //Remove client from clients
+            logger.server().info('Client %s disconnected', connection.id);
+        });
+
+        this.server.onError(function (e: any) {
+            logger.server().error('an error occured', e);
+        });
+
+        this._internalActions(this);
+    }
+    
     private _internalActions(__this: Server){
         this.server.exports.ping = function() {
             __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
@@ -75,73 +120,28 @@ export class Server {
                 
 
                 let count = 0;
-                __this.clients.filter(client => client.clientType == ClientType.Worker).forEach(client => { // Get Workers clients
+                __this.clients.filter(client => client.clientType == ClientType.Worker).forEach(client => { // Get Workers clients ONLY
                     __this.server.getClient(client.clientId).launchTask(__this.taskParameters).catch((e: any) => {
                         logger.server().error("Unable to launch task ", e);
+                    }).then(() => {
+                        ++count;
                     });
-                    ++count;
+                    
                 });
-                return count + " tasks launched successfully";
+                return count + " task(s) launched successfully";
             },
             stopTask: function () {
                 let count = 0;
-                __this.clients.filter(client => client.clientType == ClientType.Worker).forEach(client => {
+                __this.clients.filter(client => client.clientType == ClientType.Worker).forEach(client => { // Get Workers clients ONLY
                     __this.server.getClient(client.clientId).stopTask().catch((e: any) => {
                         logger.server().error("Unable to stop task ", e);
+                    }).then(() => {
+                        ++count;
                     });
-                    ++count;
                 });
-                return count + " tasks stopped successfully";
+                return count + " task(s) stopped successfully";
             }
         }
-    }
-
-    constructor(config: any = {}){
-        this.config = config;
-        this.taskParameters = [];
-        let __this = this; //Keep context
-
-        this.server = new EurecaServer({
-            authenticate: function(identifier: ClientIdentifier, next: Function){
-                try {
-                    identifier.clientId = this.user.clientId; //Save socket clientId
-                    identifier.ip = this.connection.remoteAddress.ip;//Save client ip
-                }
-                catch (e){
-                    logger.server().error("Unable to get client info ", e);
-                }
-
-                __this.clients.push(identifier);
-                next();
-            },
-            prefix: "nbfy",
-            allow: ["launchTask", "stopTask", "statusTask"]
-        });
-        this.server.attach(webServer);
-
-        this.server.onMessage(function (msg: any) {
-            logger.server().debug('RECV', msg);
-        });
-
-        this.server.onConnect(function(connection: any) {
-           logger.server().debug("connection", connection);
-           let client = connection.clientProxy;
-            setTimeout(() => {
-                //client.launchTask();
-            }, 3000);
-        });
-
-
-        this.server.onDisconnect(function (connection: any) {
-            __this.clients = __this.clients.filter(client => client.clientId !== connection.id); //Remove client from clients
-            logger.server().info('client %s disconnected', connection.id);
-        });
-
-        this.server.onError(function (e: any) {
-            logger.server().error('an error occured', e);
-        });
-
-        this._internalActions(this);
     }
 
     /**
