@@ -6,6 +6,7 @@ export declare class Server {
     private taskParameters;
     constructor(config?: any);
     private _internalActions;
+    private _saveTaskParameters;
     /**
      * Launch server
      */

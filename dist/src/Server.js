@@ -84,21 +84,14 @@ class Server {
             getParameters: function () {
                 return __this.taskParameters;
             },
+            saveParameters: function (parameters = []) {
+                __this._saveTaskParameters(parameters); //Save parameters
+            },
             launchTask: function (parameters = [], forceLaunch = false) {
                 let clientPromises = [];
                 let context = this;
                 context.async = true; //Define an asynchronous return
-                //Treat input parameters
-                if (parameters.length !== 0) {
-                    //Add value to local tasks
-                    __this.taskParameters.forEach((parameter) => {
-                        let foundParameter = parameters.find((item) => {
-                            return item.key == parameter.key;
-                        });
-                        if (typeof foundParameter !== "undefined") // Change value of local parameter
-                            parameter.value = foundParameter.value;
-                    });
-                }
+                __this._saveTaskParameters(parameters); //Save parameters
                 let total = 0;
                 __this.clients.filter(client => client.clientType == ClientIdentifier_1.ClientType.Worker).forEach(client => {
                     if (forceLaunch || client.taskStatus != ClientIdentifier_1.TaskStatus.Running) { // Launch task only if task is not currently running
@@ -138,6 +131,19 @@ class Server {
                 });
             }
         };
+    }
+    _saveTaskParameters(parameters) {
+        //Treat input parameters
+        if (parameters.length !== 0) {
+            //Add value to local tasks
+            this.taskParameters.forEach((parameter) => {
+                let foundParameter = parameters.find((item) => {
+                    return item.key == parameter.key;
+                });
+                if (typeof foundParameter !== "undefined") // Change value of local parameter
+                    parameter.value = foundParameter.value;
+            });
+        }
     }
     /**
      * Launch server

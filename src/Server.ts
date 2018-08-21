@@ -104,23 +104,15 @@ export class Server {
             getParameters: function() {
                 return __this.taskParameters;
             },
+            saveParameters: function(parameters: TaskParameter[] = []) {
+                __this._saveTaskParameters(parameters); //Save parameters
+            },
             launchTask: function (parameters: TaskParameter[] = [], forceLaunch: boolean = false) {
                 let clientPromises: any[] = [];
                 let context = this;
                 context.async = true; //Define an asynchronous return
                 
-                //Treat input parameters
-                if (parameters.length !== 0) {
-                    //Add value to local tasks
-                    __this.taskParameters.forEach((parameter: TaskParameter) => {
-                        let foundParameter = parameters.find((item: TaskParameter) => { // Match local parameter with argument parameter
-                            return item.key == parameter.key
-                        });
-    
-                        if (typeof foundParameter !== "undefined") // Change value of local parameter
-                            parameter.value = foundParameter.value;
-                    });
-                }
+                __this._saveTaskParameters(parameters); //Save parameters
                 
                 let total = 0;
                 
@@ -167,6 +159,21 @@ export class Server {
                     });
                 });
             }
+        }
+    }
+    
+    private _saveTaskParameters(parameters: TaskParameter[]){
+        //Treat input parameters
+        if (parameters.length !== 0) {
+            //Add value to local tasks
+            this.taskParameters.forEach((parameter: TaskParameter) => {
+                let foundParameter = parameters.find((item: TaskParameter) => { // Match local parameter with argument parameter
+                    return item.key == parameter.key
+                });
+
+                if (typeof foundParameter !== "undefined") // Change value of local parameter
+                    parameter.value = foundParameter.value;
+            });
         }
     }
 

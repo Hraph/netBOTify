@@ -62,7 +62,8 @@ export class RemoteCLI extends Client {
         vorpal
             .command('ping', 'Ping the server.')
             .action((args: any, callback: Function) => {
-                __this._executeDistantCommand("ping").then(() => {
+                __this._executeDistantCommand("ping").then((result: any) => {
+                    vorpal.log(result);
                     callback();
                 });
             });
@@ -99,10 +100,20 @@ export class RemoteCLI extends Client {
         vorpal
             .command('parameters', 'Manage task parameters.')
             .option("-r, --reload", "Erase and reload the current parameters from the server.")
+            .option("-s, --save", "Save parameters value on the server.")
             .action(function(args: any, callback: Function) {
                 // @ts-ignore: TS2683 'this' implicitly has type 'any' because it does not have a type annotation.
                 __this._setupTaskParameters(this, args.options.reload).then(() => {
-                    callback();
+                    if (args.options.save) {
+                        __this._executeDistantCommand("saveParameters", __this.taskParameters)
+                            .catch(__this._serverInvalidCommandError)
+                            .then((result: any) => {
+                                vorpal.log("Parameters saved on the server.");
+                                callback();
+                            });
+                    }
+                    else
+                        callback();
                 });
             });
             
