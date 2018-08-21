@@ -138,7 +138,6 @@ class Server {
             for (let parameterKey in parameters) {
                 let parameter = parameters[parameterKey];
                 if (this.taskParameters.hasOwnProperty(parameter.key)) {
-                    console.log(parameter);
                     this.taskParameters[parameter.key] = parameter; //Update the local parameter
                 }
             }

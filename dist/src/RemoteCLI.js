@@ -67,7 +67,7 @@ class RemoteCLI extends Client_1.Client {
                 __this._executeDistantCommand("launchTask", __this.taskParameters, args.options.force) //Execute task with parameters
                     .catch(__this._serverInvalidCommandError)
                     .then((result) => {
-                    vorpal.log("%d worker%s'task launched of %d worker%s", result.success, (result.success >= 2) ? "s" : "", result.total, (result.total >= 2) ? "s" : "");
+                    vorpal.log("%d worker's task launched of %d worker%s", result.success, result.total, (result.total >= 2) ? "s" : "");
                     callback();
                 });
             });
@@ -100,7 +100,7 @@ class RemoteCLI extends Client_1.Client {
             __this._executeDistantCommand("stopTask", args.options.force)
                 .catch(__this._serverInvalidCommandError)
                 .then((result) => {
-                vorpal.log("%d worker%s'task stopped of %d worker%s", result.success, (result.success >= 2) ? "s" : "", result.total, (result.total >= 2) ? "s" : "");
+                vorpal.log("%d worker's task stopped of %d worker%s", result.success, result.total, (result.total >= 2) ? "s" : "");
                 callback();
             });
         });
