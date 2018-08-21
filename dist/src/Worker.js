@@ -10,35 +10,47 @@ class Worker extends Client_1.Client {
         let __this = this; //Keep context
         this.taskEvent = new EventEmitter();
         this.client.ready((serverProxy) => {
+            logger_1.logger.worker().info('Connected to server');
         });
-        this.client.onConnect((connection) => {
-            //__this.identifier.clientId = connection.id;
-            logger_1.logger.worker().info('Incomming connection');
+        this.client.onConnect((client) => {
+            if (this.client.isReady()) //Client reconnected
+                logger_1.logger.worker().info('Reconnected to server');
         });
-        this.client.onMessage(function (data) {
-            logger_1.logger.worker().debug('Received data', data);
+        this.client.onUnhandledMessage(function (data) {
+            logger_1.logger.worker().debug('Received message: ', data);
         });
         this.client.onError(function (e) {
             if (e.type === "TransportError") {
                 logger_1.logger.worker().error("Unable to connect to server: code", e.description);
             }
             else {
-                logger_1.logger.worker().error('Unknown error', e);
+                logger_1.logger.worker().error('Unknown error ', e);
             }
         });
         this.client.onConnectionLost(function () {
-            logger_1.logger.worker().warning('connection lost ... will try to reconnect');
+            logger_1.logger.worker().warn('Connection lost ... will try to reconnect');
         });
         this.client.onConnectionRetry(function (socket) {
-            logger_1.logger.worker().warning('retrying ...');
+            logger_1.logger.worker().warn('retrying ...');
         });
         this.client.onDisconnect(function (socket) {
             logger_1.logger.worker().info('Client disconnected ', socket.id);
         });
-        this._internalActions();
-        this.client.exports.launchTask = function () {
+        this._internalActions(this);
+    }
+    onLaunchTask(callback) {
+        this.taskEvent.on("launchTask", callback);
+    }
+    onStopTask(callback) {
+        this.taskEvent.on("stopTask", callback);
+    }
+    onStatusTask(callback) {
+        this.taskEvent.on("statusTask", callback);
+    }
+    _internalActions(__this) {
+        this.client.exports.launchTask = function (parameters) {
             //this.serverProxy is injected by eureca
-            __this.taskEvent.emit("launchTask", __this.server);
+            __this.taskEvent.emit("launchTask", parameters, __this.server);
             __this.server.task.taskLaunched().catch((e) => {
                 logger_1.logger.worker().error("Unable to execute command ", e);
             });
@@ -52,14 +64,10 @@ class Worker extends Client_1.Client {
             });
             __this.identifier.taskStatus = ClientIdentifier_1.TaskStatus.Idle;
         };
-    }
-    onLaunchTask(callback) {
-        this.taskEvent.on("launchTask", callback);
-    }
-    onStopTask(callback) {
-        this.taskEvent.on("stopTask", callback);
-    }
-    _internalActions() {
+        this.client.exports.statusTask = function () {
+            //this.serverProxy is injected by eureca
+            __this.taskEvent.emit("statusTask", __this.server);
+        };
     }
 }
 exports.Worker = Worker;

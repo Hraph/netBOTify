@@ -4,5 +4,6 @@ const Server_1 = require("../src/Server");
 let server = new Server_1.Server({
     port: 8000
 });
+server.addTaskParameter("id", "12345678");
 server.connect();
 //# sourceMappingURL=server.js.map

@@ -53,7 +53,8 @@ export class Client {
         //Create Eureca client
         this.client = new EurecaClient({
             uri: (this.config.uri) ? this.config.uri : "http://localhost:8000/",
-            prefix: "nbfy"
+            prefix: "nbfy",
+            autoConnect: (this.config.autoConnect) ? this.config.autoConnect : true,
         });
 
         this.client.ready((serverProxy: any) => { //Triggered when authenticated
@@ -62,15 +63,26 @@ export class Client {
         });
 
         this.client.onConnect((client: any) => {
+            if (this.client.isReady()) //Client was already connected but is now reconnecting : increment reconnect count
+                ++this.identifier.reconnect;
+            
             this.client.authenticate(this.identifier); //Authenticate when connect
 
-            if (this.client.isReady()) //Client was ready but is now reconnecting : relaunch ping
+            if (this.client.isReady()) //Client was already connected but is now reconnecting : now relaunch ping while it's authenticated
                 this.launchPing(client._proxy);
         });
 
         this.client.onDisconnect((socket: any) => {
             this.stopPing();
         });
+    }
+    
+    /**
+     * Manually connect to the server
+     * @public
+     */
+    public connect(){
+        this.client.connect();
     }
 
     /**

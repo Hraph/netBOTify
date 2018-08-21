@@ -17,6 +17,7 @@ export declare class ClientIdentifier {
     latestReceivedPingTimestamp: number;
     taskStatus: TaskStatus;
     ip: any;
+    reconnect: number;
     constructor(groupId: string, instanceId: string);
     private _generateHash;
 }

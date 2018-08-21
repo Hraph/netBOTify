@@ -8,3 +8,8 @@ let cli = new RemoteCLI({
     uri: "http://localhost:8000/",
     identifier: identifier
 });
+
+cli.addCommand("test", "Write a test", (args: any, callback: Function) => {
+    console.log("TEST");
+    callback();
+});

@@ -19,6 +19,11 @@ export declare class Client {
     protected stopPing(): void;
     protected constructor(config?: any);
     /**
+     * Manually connect to the server
+     * @public
+     */
+    connect(): void;
+    /**
      * Defines default Client config
      * @param config
      * @returns {{}}
