@@ -9,8 +9,8 @@ class Server {
     constructor(config = {}) {
         this.clients = [];
         this.config = {};
+        this.taskParameters = {};
         this.config = config;
-        this.taskParameters = [];
         let __this = this; //Keep context
         this.server = new EurecaServer({
             authenticate: function (identifier, next) {
@@ -84,10 +84,10 @@ class Server {
             getParameters: function () {
                 return __this.taskParameters;
             },
-            saveParameters: function (parameters = []) {
+            saveParameters: function (parameters = {}) {
                 __this._saveTaskParameters(parameters); //Save parameters
             },
-            launchTask: function (parameters = [], forceLaunch = false) {
+            launchTask: function (parameters = {}, forceLaunch = false) {
                 let clientPromises = [];
                 let context = this;
                 context.async = true; //Define an asynchronous return
@@ -132,17 +132,17 @@ class Server {
             }
         };
     }
-    _saveTaskParameters(parameters) {
+    _saveTaskParameters(parameters = {}) {
         //Treat input parameters
-        if (parameters.length !== 0) {
-            //Add value to local tasks
-            this.taskParameters.forEach((parameter) => {
-                let foundParameter = parameters.find((item) => {
-                    return item.key == parameter.key;
-                });
-                if (typeof foundParameter !== "undefined") // Change value of local parameter
-                    parameter.value = foundParameter.value;
-            });
+        if (Object.keys(parameters).length !== 0) {
+            for (let parameterKey in parameters) {
+                let parameter = parameters[parameterKey];
+                if (this.taskParameters.hasOwnProperty(parameter.key)) {
+                    console.log(parameter);
+                    this.taskParameters[parameter.key] = parameter; //Update the local parameter
+                }
+            }
+            ;
         }
     }
     /**
@@ -154,7 +154,7 @@ class Server {
         webServer.listen(this.config.port);
     }
     addTaskParameter(key, defaultValue, value = null) {
-        this.taskParameters.push(new TaskParameter_1.TaskParameter(key, defaultValue, value));
+        this.taskParameters[key] = (new TaskParameter_1.TaskParameter(key, defaultValue, value));
     }
     addServerAction(name, callback) {
         this.server.exports[name] = callback;
