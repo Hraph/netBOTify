@@ -1,6 +1,6 @@
 import {ClientIdentifier, ClientType, TaskStatus} from "./ClientIdentifier";
-import { logger } from "./logger";
-import { TaskParameter } from "./TaskParameter";
+import {logger} from "./logger";
+import {TaskParameter} from "./TaskParameter";
 
 const EurecaServer = require("eureca.io").Server;
 const express = require('express')
@@ -80,7 +80,7 @@ export class Server {
                     client.taskStatus = TaskStatus.Idle;
                 });
             },
-            taskLog: function (log: any) {
+            taskStatus: function (log: any) {
 
             },
             result: function(result: any) {
@@ -134,6 +134,7 @@ export class Server {
                 
                 Promise.all(clientPromises).catch((e: any) => { //Wait all launches to finish
                     logger.server().error("Unable to launch task ", e);
+                    //TODO Send error to CLI
                 }).then((results: any) => {
                     context.return({
                         success: results.length,
@@ -141,7 +142,7 @@ export class Server {
                     });
                 });
             },
-            stopTask: function () {
+            stopTask: function (forceStop: boolean = false) {
                 let clientPromises: any[] = [];
                 let context = this;
                 context.async = true; //Define an asynchronous return
@@ -149,7 +150,7 @@ export class Server {
                 let total = 0;
                 
                 __this.clients.filter(client => client.clientType == ClientType.Worker).forEach(client => { // Get Workers clients ONLY
-                    if (client.taskStatus != TaskStatus.Idle) { // Stop task only if task is not currently stopped
+                    if (forceStop || client.taskStatus != TaskStatus.Idle) { // Stop task only if task is not currently stopped
                         clientPromises.push(__this.server.getClient(client.clientId).stopTask()); //Stop task
                     }
                     
@@ -178,8 +179,8 @@ export class Server {
         webServer.listen(this.config.port);
     }
     
-    public addTaskParameter(parameter: TaskParameter){
-        this.taskParameters.push(parameter);
+    public addTaskParameter(key: string, defaultValue: any, value: any = null){
+        this.taskParameters.push(new TaskParameter(key, defaultValue, value));
     }
 
     public addServerAction(name: string, callback: Function){

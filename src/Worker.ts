@@ -1,7 +1,7 @@
 import {Client} from "./Client";
 import {TaskStatus} from "./ClientIdentifier";
-import { logger } from "./logger";
-import { TaskParameter } from "./TaskParameter";
+import {logger} from "./logger";
+import {TaskParameter} from "./TaskParameter";
 
 const EventEmitter = require("events");
 
@@ -61,6 +61,10 @@ export class Worker extends Client {
     public onStopTask(callback: (server: any) => void){
         this.taskEvent.on("stopTask", callback);
     }
+    
+    public onStatusTask(callback: (server: any) => void){
+        this.taskEvent.on("statusTask", callback);
+    }
 
 
     private _internalActions(__this: Worker){
@@ -82,6 +86,13 @@ export class Worker extends Client {
                 logger.worker().error("Unable to execute command ", e);
             });
             __this.identifier.taskStatus = TaskStatus.Idle;
+        }
+        
+        this.client.exports.statusTask = function() {
+            //this.serverProxy is injected by eureca
+
+            __this.taskEvent.emit("statusTask", __this.server);
+            
         }
     }
 }
