@@ -51,6 +51,7 @@ class RemoteCLI extends Client_1.Client {
         //Launch
         vorpal
             .command('launch', 'Launch the task on workers.')
+            .option('-f, --force', "Force sending start even if it's already launched")
             .action(function (args, callback) {
             let setParametersCommandPromise = [];
             //Parameters has not been retrieved before: SET UP PARAMETERS
@@ -62,10 +63,10 @@ class RemoteCLI extends Client_1.Client {
             }
             //Parameters has been set
             Promise.all(setParametersCommandPromise).then(() => {
-                __this._executeDistantCommand("launchTask", __this.taskParameters) //Execute task with parameters
+                __this._executeDistantCommand("launchTask", __this.taskParameters, args.options.force) //Execute task with parameters
                     .catch(__this._serverInvalidCommandError)
                     .then((result) => {
-                    vorpal.log("%d task(s) launched of %d", result.success, result.total);
+                    vorpal.log("%d worker%s'task launched of %d worker%s", result.success, (result.success >= 2) ? "s" : "", result.total, (result.total >= 2) ? "s" : "");
                     callback();
                 });
             });
@@ -73,7 +74,7 @@ class RemoteCLI extends Client_1.Client {
         //Parameters
         vorpal
             .command('parameters', 'Manage task parameters.')
-            .option("-r, --reload", "Erase and reload the current server task parameters.")
+            .option("-r, --reload", "Erase and reload the current parameters from the server.")
             .action(function (args, callback) {
             // @ts-ignore: TS2683 'this' implicitly has type 'any' because it does not have a type annotation.
             __this._setupTaskParameters(this, args.options.reload).then(() => {
@@ -83,11 +84,12 @@ class RemoteCLI extends Client_1.Client {
         //Stop
         vorpal
             .command('stop', 'Stop the task on workers.')
+            .option('-f, --force', "Force sending stop even if it's already stopped")
             .action((args, callback) => {
-            __this._executeDistantCommand("stopTask")
+            __this._executeDistantCommand("stopTask", args.options.force)
                 .catch(__this._serverInvalidCommandError)
                 .then((result) => {
-                vorpal.log("%d task(s) stopped of %d", result.success, result.total);
+                vorpal.log("%d worker%s'task stopped of %d worker%s", result.success, (result.success >= 2) ? "s" : "", result.total, (result.total >= 2) ? "s" : "");
                 callback();
             });
         });
@@ -98,7 +100,7 @@ class RemoteCLI extends Client_1.Client {
             __this._executeDistantCommand("getWorkers")
                 .catch(__this._serverInvalidCommandError)
                 .then((result) => {
-                vorpal.log(result.length + " items");
+                vorpal.log(result.length + " workers");
                 vorpal.log(cTable.getTable(result));
                 callback();
             });
@@ -110,7 +112,7 @@ class RemoteCLI extends Client_1.Client {
             __this._executeDistantCommand("getCLIs")
                 .catch(__this._serverInvalidCommandError)
                 .then((result) => {
-                vorpal.log(result.length + " items");
+                vorpal.log(result.length + " CLIs");
                 vorpal.log(cTable.getTable(result));
                 callback();
             });

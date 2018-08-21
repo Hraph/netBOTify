@@ -13,3 +13,8 @@ worker.onLaunchTask((parameters: TaskParameter[], server: any) => {
     console.log("launch", parameters);
 
 });
+
+worker.onStopTask((server: any) => {
+    console.log("stop");
+
+});

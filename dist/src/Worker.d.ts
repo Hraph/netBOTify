@@ -5,5 +5,6 @@ export declare class Worker extends Client {
     constructor(config?: any);
     onLaunchTask(callback: (parameters: TaskParameter[], server: any) => void): void;
     onStopTask(callback: (server: any) => void): void;
+    onStatusTask(callback: (server: any) => void): void;
     private _internalActions;
 }

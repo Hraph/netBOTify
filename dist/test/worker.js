@@ -10,4 +10,7 @@ let worker = new Worker_1.Worker({
 worker.onLaunchTask((parameters, server) => {
     console.log("launch", parameters);
 });
+worker.onStopTask((server) => {
+    console.log("stop");
+});
 //# sourceMappingURL=worker.js.map

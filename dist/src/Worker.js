@@ -44,6 +44,9 @@ class Worker extends Client_1.Client {
     onStopTask(callback) {
         this.taskEvent.on("stopTask", callback);
     }
+    onStatusTask(callback) {
+        this.taskEvent.on("statusTask", callback);
+    }
     _internalActions(__this) {
         this.client.exports.launchTask = function (parameters) {
             //this.serverProxy is injected by eureca
@@ -60,6 +63,10 @@ class Worker extends Client_1.Client {
                 logger_1.logger.worker().error("Unable to execute command ", e);
             });
             __this.identifier.taskStatus = ClientIdentifier_1.TaskStatus.Idle;
+        };
+        this.client.exports.statusTask = function () {
+            //this.serverProxy is injected by eureca
+            __this.taskEvent.emit("statusTask", __this.server);
         };
     }
 }

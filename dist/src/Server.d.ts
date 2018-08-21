@@ -1,5 +1,4 @@
 import { ClientIdentifier } from "./ClientIdentifier";
-import { TaskParameter } from "./TaskParameter";
 export declare class Server {
     clients: ClientIdentifier[];
     private config;
@@ -11,7 +10,7 @@ export declare class Server {
      * Launch server
      */
     connect(): void;
-    addTaskParameter(parameter: TaskParameter): void;
+    addTaskParameter(key: string, defaultValue: any, value?: any): void;
     addServerAction(name: string, callback: Function): void;
     addWorkerTask(name: string): void;
 }
