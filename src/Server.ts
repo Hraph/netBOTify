@@ -1,6 +1,6 @@
 import {ClientIdentifier, ClientType, TaskStatus} from "./ClientIdentifier";
 import {logger} from "./logger";
-import {TaskParameter} from "./TaskParameter";
+import {TaskParameter, TaskParameterList} from "./TaskParameter";
 
 const EurecaServer = require("eureca.io").Server;
 const express = require('express')
@@ -15,11 +15,10 @@ export class Server {
     public clients: ClientIdentifier[] = [];
     private config: any = {};
     private server: any;
-    private taskParameters: TaskParameter[];
+    private taskParameters: TaskParameterList = {};
 
     constructor(config: any = {}){
         this.config = config;
-        this.taskParameters = [];
         let __this = this; //Keep context
 
         this.server = new EurecaServer({
@@ -104,23 +103,15 @@ export class Server {
             getParameters: function() {
                 return __this.taskParameters;
             },
-            launchTask: function (parameters: TaskParameter[] = [], forceLaunch: boolean = false) {
+            saveParameters: function(parameters: TaskParameterList = {}) {
+                __this._saveTaskParameters(parameters); //Save parameters
+            },
+            launchTask: function (parameters: TaskParameterList = {}, forceLaunch: boolean = false) {
                 let clientPromises: any[] = [];
                 let context = this;
                 context.async = true; //Define an asynchronous return
                 
-                //Treat input parameters
-                if (parameters.length !== 0) {
-                    //Add value to local tasks
-                    __this.taskParameters.forEach((parameter: TaskParameter) => {
-                        let foundParameter = parameters.find((item: TaskParameter) => { // Match local parameter with argument parameter
-                            return item.key == parameter.key
-                        });
-    
-                        if (typeof foundParameter !== "undefined") // Change value of local parameter
-                            parameter.value = foundParameter.value;
-                    });
-                }
+                __this._saveTaskParameters(parameters); //Save parameters
                 
                 let total = 0;
                 
@@ -169,6 +160,19 @@ export class Server {
             }
         }
     }
+    
+    private _saveTaskParameters(parameters: TaskParameterList = {}){
+        //Treat input parameters
+        if (Object.keys(parameters).length !== 0) {
+            for (let parameterKey in parameters) {
+                let parameter = parameters[parameterKey];
+                
+                if (this.taskParameters.hasOwnProperty(parameter.key)) {
+                    this.taskParameters[parameter.key] = parameter; //Update the local parameter
+                }
+            };
+        }
+    }
 
     /**
      * Launch server
@@ -180,7 +184,7 @@ export class Server {
     }
     
     public addTaskParameter(key: string, defaultValue: any, value: any = null){
-        this.taskParameters.push(new TaskParameter(key, defaultValue, value));
+        this.taskParameters[key] = (new TaskParameter(key, defaultValue, value));
     }
 
     public addServerAction(name: string, callback: Function){

@@ -44,7 +44,8 @@ class RemoteCLI extends Client_1.Client {
         vorpal
             .command('ping', 'Ping the server.')
             .action((args, callback) => {
-            __this._executeDistantCommand("ping").then(() => {
+            __this._executeDistantCommand("ping").then((result) => {
+                vorpal.log(result);
                 callback();
             });
         });
@@ -75,10 +76,20 @@ class RemoteCLI extends Client_1.Client {
         vorpal
             .command('parameters', 'Manage task parameters.')
             .option("-r, --reload", "Erase and reload the current parameters from the server.")
+            .option("-s, --save", "Save parameters value on the server now.")
             .action(function (args, callback) {
             // @ts-ignore: TS2683 'this' implicitly has type 'any' because it does not have a type annotation.
             __this._setupTaskParameters(this, args.options.reload).then(() => {
-                callback();
+                if (args.options.save) {
+                    __this._executeDistantCommand("saveParameters", __this.taskParameters)
+                        .catch(__this._serverInvalidCommandError)
+                        .then((result) => {
+                        vorpal.log("Parameters saved on the server.");
+                        callback();
+                    });
+                }
+                else
+                    callback();
             });
         });
         //Stop
@@ -136,7 +147,7 @@ class RemoteCLI extends Client_1.Client {
             //Wait GetParameters function if request needed  
             Promise.all(getTaskParametersPromise).catch(reject).then(() => {
                 //Parameters are retrieved: ready to ask values
-                if (this.taskParameters == null || this.taskParameters.length === 0) {
+                if (this.taskParameters == null || Object.keys(this.taskParameters).length === 0) {
                     vorpal.log("No parameters to manage.");
                     vorpal.log("----------------------------");
                     resolve();
@@ -145,24 +156,24 @@ class RemoteCLI extends Client_1.Client {
                     //Parameters already retrieved
                     let vorpalPrompts = [];
                     //Ask value for each parameters
-                    this.taskParameters.forEach((parameter) => {
+                    for (let parameterKey in this.taskParameters) {
+                        let parameter = this.taskParameters[parameterKey];
                         vorpalPrompts.push({
                             type: "input",
                             name: parameter.key,
                             message: parameter.message + " (CURRENT: " + parameter.value + ", DEFAULT: " + parameter.defaultValue + "): "
                         });
-                    });
+                    }
+                    ;
                     vorpal.log("----------------------------");
-                    vorpal.log("Configuring " + this.taskParameters.length + " parameter(s):");
+                    vorpal.log("Configuring " + Object.keys(this.taskParameters).length + " parameter(s):");
                     vorpalCommand.prompt(vorpalPrompts).then((answers) => {
                         vorpal.log("----------------------------");
                         //Update parameters value
-                        this.taskParameters.filter((parameter) => {
-                            return answers.hasOwnProperty(parameter.key);
-                        }).forEach((parameter) => {
-                            if (answers[parameter.key] !== "") //Not empty value
-                                parameter.value = answers[parameter.key];
-                        });
+                        for (let answerKey in answers) {
+                            if (this.taskParameters.hasOwnProperty(answerKey) && answers[answerKey] !== "") //Parameter exist and not empty parameter
+                                this.taskParameters[answerKey].value = answers[answerKey];
+                        }
                         resolve();
                     });
                 }

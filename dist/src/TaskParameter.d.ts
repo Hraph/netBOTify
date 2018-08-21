@@ -5,3 +5,6 @@ export declare class TaskParameter {
     message: string;
     constructor(key: string, defaultValue: any, value?: any);
 }
+export interface TaskParameterList {
+    [key: string]: TaskParameter;
+}

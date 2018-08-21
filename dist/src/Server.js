@@ -9,8 +9,8 @@ class Server {
     constructor(config = {}) {
         this.clients = [];
         this.config = {};
+        this.taskParameters = {};
         this.config = config;
-        this.taskParameters = [];
         let __this = this; //Keep context
         this.server = new EurecaServer({
             authenticate: function (identifier, next) {
@@ -84,21 +84,14 @@ class Server {
             getParameters: function () {
                 return __this.taskParameters;
             },
-            launchTask: function (parameters = [], forceLaunch = false) {
+            saveParameters: function (parameters = {}) {
+                __this._saveTaskParameters(parameters); //Save parameters
+            },
+            launchTask: function (parameters = {}, forceLaunch = false) {
                 let clientPromises = [];
                 let context = this;
                 context.async = true; //Define an asynchronous return
-                //Treat input parameters
-                if (parameters.length !== 0) {
-                    //Add value to local tasks
-                    __this.taskParameters.forEach((parameter) => {
-                        let foundParameter = parameters.find((item) => {
-                            return item.key == parameter.key;
-                        });
-                        if (typeof foundParameter !== "undefined") // Change value of local parameter
-                            parameter.value = foundParameter.value;
-                    });
-                }
+                __this._saveTaskParameters(parameters); //Save parameters
                 let total = 0;
                 __this.clients.filter(client => client.clientType == ClientIdentifier_1.ClientType.Worker).forEach(client => {
                     if (forceLaunch || client.taskStatus != ClientIdentifier_1.TaskStatus.Running) { // Launch task only if task is not currently running
@@ -139,6 +132,19 @@ class Server {
             }
         };
     }
+    _saveTaskParameters(parameters = {}) {
+        //Treat input parameters
+        if (Object.keys(parameters).length !== 0) {
+            for (let parameterKey in parameters) {
+                let parameter = parameters[parameterKey];
+                if (this.taskParameters.hasOwnProperty(parameter.key)) {
+                    console.log(parameter);
+                    this.taskParameters[parameter.key] = parameter; //Update the local parameter
+                }
+            }
+            ;
+        }
+    }
     /**
      * Launch server
      */
@@ -148,7 +154,7 @@ class Server {
         webServer.listen(this.config.port);
     }
     addTaskParameter(key, defaultValue, value = null) {
-        this.taskParameters.push(new TaskParameter_1.TaskParameter(key, defaultValue, value));
+        this.taskParameters[key] = (new TaskParameter_1.TaskParameter(key, defaultValue, value));
     }
     addServerAction(name, callback) {
         this.server.exports[name] = callback;
