@@ -1,7 +1,7 @@
 import {Client} from "./Client";
 import {TaskStatus} from "./ClientIdentifier";
 import {logger} from "./logger";
-import {TaskParameter} from "./TaskParameter";
+import {TaskParameter, TaskParameterList} from "./TaskParameter";
 
 const EventEmitter = require("events");
 
@@ -54,7 +54,7 @@ export class Worker extends Client {
         this._internalActions(this);
     }
 
-    public onLaunchTask(callback: (parameters: TaskParameter[], server: any) => void){
+    public onLaunchTask(callback: (parameters: TaskParameterList, server: any) => void){
         this.taskEvent.on("launchTask", callback);
     }
 
@@ -68,7 +68,7 @@ export class Worker extends Client {
 
 
     private _internalActions(__this: Worker){
-        this.client.exports.launchTask = function(parameters: TaskParameter[]) {
+        this.client.exports.launchTask = function(parameters: TaskParameterList) {
             //this.serverProxy is injected by eureca
             
             __this.taskEvent.emit("launchTask", parameters, __this.server);

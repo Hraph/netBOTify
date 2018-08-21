@@ -27,6 +27,7 @@ let server = new Netbotify.Server({
 
 //Add parameters fot the workers
 server.addTaskParameter("parameterKey", "defaultValue"); // Value will be editable with "parameters" command in CLI
+server.addTaskParameter("id", "12345678");
 
 server.connect();
 ~~~~
@@ -43,7 +44,8 @@ let worker = new Netbotify.Worker({
 
 // Add task content on launch
 worker.onLaunchTask((parameters, server) => {
-    //Parameters contains a list of parameters defined by the CLI when the task is launched
+    //Parameters contains all parameters defined by the CLI when the task is launched
+    console.log("Parameter 'id': ", parameters.id.value); // Should have defaultValue "12345678"
     console.log("Task is launched by the server");
 
 });
@@ -83,6 +85,7 @@ cli.connect(); // In case of autoConnect: false
 - `parameters`: get the list of connected workers on the server
     - Options:
         - `-r, --reload`: erase and reload the current parameters from the server
+        - `-s, --save`: save parameters value on the server now
 - `workers`: get the list of connected workers on the server
 - `clis`: get the list of connected CLIs on the server
 - `launch`: start all the tasks on the connected workers

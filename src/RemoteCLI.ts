@@ -1,7 +1,7 @@
 import {Client} from "./Client";
 import {ClientIdentifier, ClientType, TaskStatus} from "./ClientIdentifier";
 import {logger} from "./logger";
-import {TaskParameter} from "./TaskParameter";
+import {TaskParameter, TaskParameterList} from "./TaskParameter";
 
 const EventEmitter = require("events"),
       vorpal = require('vorpal')(),
@@ -100,7 +100,7 @@ export class RemoteCLI extends Client {
         vorpal
             .command('parameters', 'Manage task parameters.')
             .option("-r, --reload", "Erase and reload the current parameters from the server.")
-            .option("-s, --save", "Save parameters value on the server.")
+            .option("-s, --save", "Save parameters value on the server now.")
             .action(function(args: any, callback: Function) {
                 // @ts-ignore: TS2683 'this' implicitly has type 'any' because it does not have a type annotation.
                 __this._setupTaskParameters(this, args.options.reload).then(() => {
@@ -180,7 +180,7 @@ export class RemoteCLI extends Client {
             Promise.all(getTaskParametersPromise).catch(reject).then(() => { 
                 //Parameters are retrieved: ready to ask values
                 
-                if (this.taskParameters == null || this.taskParameters.length === 0) {
+                if (this.taskParameters == null || Object.keys(this.taskParameters).length === 0) {
                     vorpal.log("No parameters to manage.");
                     vorpal.log("----------------------------");
                     resolve();
@@ -190,28 +190,28 @@ export class RemoteCLI extends Client {
                     let vorpalPrompts: any = [];
                         
                     //Ask value for each parameters
-                    this.taskParameters.forEach((parameter: TaskParameter) => {
+                    for (let parameterKey in this.taskParameters) {
+                        let parameter = this.taskParameters[parameterKey];
+                        
                         vorpalPrompts.push({
                             type: "input",
                             name: parameter.key,
                             message: parameter.message + " (CURRENT: " + parameter.value + ", DEFAULT: " + parameter.defaultValue + "): " 
                         });
-                    });
+                    };
                     
                     vorpal.log("----------------------------");
 
-                    vorpal.log("Configuring " + this.taskParameters.length + " parameter(s):");
+                    vorpal.log("Configuring " + Object.keys(this.taskParameters).length + " parameter(s):");
                     
                     vorpalCommand.prompt(vorpalPrompts).then((answers: any) => {
                         vorpal.log("----------------------------");
                         
                         //Update parameters value
-                        this.taskParameters.filter((parameter: TaskParameter) => {
-                            return answers.hasOwnProperty(parameter.key);
-                        }).forEach((parameter: TaskParameter) => {
-                            if (answers[parameter.key] !== "") //Not empty value
-                                parameter.value = answers[parameter.key];
-                        });
+                        for (let answerKey in answers) {
+                            if (this.taskParameters.hasOwnProperty(answerKey) && answers[answerKey] !== "") //Parameter exist and not empty parameter
+                                this.taskParameters[answerKey].value = answers[answerKey];
+                        }
                         
                         resolve();
                     });
@@ -223,7 +223,7 @@ export class RemoteCLI extends Client {
     
     private _getServerTaskParameters(){
         return new Promise((resolve, reject) => {
-            this.server.cli["getParameters"]().then((parameters: TaskParameter[]) => {
+            this.server.cli["getParameters"]().then((parameters: TaskParameterList) => {
                 this.taskParameters = parameters;
                 resolve();
             }).catch(reject);
