@@ -4,6 +4,7 @@ export declare class Server {
     private config;
     private server;
     private taskParameters;
+    private serverEvent;
     constructor(config?: any);
     private _internalActions;
     private _saveTaskParameters;
@@ -11,6 +12,7 @@ export declare class Server {
      * Launch server
      */
     connect(): void;
+    onTaskEnded(callback: (result: any, client: any) => void): void;
     addTaskParameter(key: string, defaultValue: any, value?: any): void;
     addServerAction(name: string, callback: Function): void;
     addWorkerTask(name: string): void;

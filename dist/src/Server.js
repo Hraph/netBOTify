@@ -4,7 +4,7 @@ const ClientIdentifier_1 = require("./ClientIdentifier");
 const logger_1 = require("./logger");
 const TaskParameter_1 = require("./TaskParameter");
 const EurecaServer = require("eureca.io").Server;
-const express = require('express'), app = express(), webServer = require('http').createServer(app);
+const express = require('express'), app = express(), webServer = require('http').createServer(app), EventEmitter = require("events");
 class Server {
     constructor(config = {}) {
         this.clients = [];
@@ -12,6 +12,7 @@ class Server {
         this.taskParameters = {};
         this.config = config;
         let __this = this; //Keep context
+        this.serverEvent = new EventEmitter();
         this.server = new EurecaServer({
             authenticate: function (identifier, next) {
                 try {
@@ -64,8 +65,8 @@ class Server {
             },
             taskStatus: function (log) {
             },
-            result: function (result) {
-                console.log("result");
+            taskEnded: function (result) {
+                __this.serverEvent.emit("taskEnded", result, this.clientProxy);
             }
         };
         this.server.exports.cli = {
@@ -151,6 +152,9 @@ class Server {
         if (!this.config.port)
             this.config.port = 8000;
         webServer.listen(this.config.port);
+    }
+    onTaskEnded(callback) {
+        this.serverEvent.on("taskEnded", callback);
     }
     addTaskParameter(key, defaultValue, value = null) {
         this.taskParameters[key] = (new TaskParameter_1.TaskParameter(key, defaultValue, value));
