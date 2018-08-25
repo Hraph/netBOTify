@@ -85,8 +85,11 @@ export class Server {
             taskStatus: function (log: any) {
 
             },
-            taskEnded: function(result: any) {
-                __this.serverEvent.emit("taskEnded", result, this.clientProxy);
+            taskResult: function(result: any) {
+                __this.serverEvent.emit("taskResult", result, this.clientProxy);
+            },
+            taskEnded: function(data: any) {
+                __this.serverEvent.emit("taskEnded", data, this.clientProxy);
             }
         };
 
@@ -186,7 +189,11 @@ export class Server {
         webServer.listen(this.config.port);
     }
     
-    public onTaskEnded(callback: (result: any, client: any) => void){
+    public onTaskResult(callback: (result: any, client: any) => void){
+        this.serverEvent.on("taskResult", callback);
+    }
+    
+    public onTaskEnded(callback: (data: any, client: any) => void){
         this.serverEvent.on("taskEnded", callback);
     }
     

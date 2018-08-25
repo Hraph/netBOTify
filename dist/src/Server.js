@@ -65,8 +65,11 @@ class Server {
             },
             taskStatus: function (log) {
             },
-            taskEnded: function (result) {
-                __this.serverEvent.emit("taskEnded", result, this.clientProxy);
+            taskResult: function (result) {
+                __this.serverEvent.emit("taskResult", result, this.clientProxy);
+            },
+            taskEnded: function (data) {
+                __this.serverEvent.emit("taskEnded", data, this.clientProxy);
             }
         };
         this.server.exports.cli = {
@@ -152,6 +155,9 @@ class Server {
         if (!this.config.port)
             this.config.port = 8000;
         webServer.listen(this.config.port);
+    }
+    onTaskResult(callback) {
+        this.serverEvent.on("taskResult", callback);
     }
     onTaskEnded(callback) {
         this.serverEvent.on("taskEnded", callback);
