@@ -65,7 +65,16 @@ export class Worker extends Client {
     public onStatusTask(callback: (server: any) => void){
         this.taskEvent.on("statusTask", callback);
     }
-
+    
+    public sendTaskResult(result: any = null){
+        if (this.server !== null)
+            this.server.task.taskResult(result);
+    }
+    
+    public sendTaskEnded(data: any = null){
+        if (this.server !== null)
+            this.server.task.taskEnded(data);
+    }
 
     private _internalActions(__this: Worker){
         this.client.exports.launchTask = function(parameters: TaskParameterList) {

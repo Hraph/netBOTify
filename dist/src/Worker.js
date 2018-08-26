@@ -47,6 +47,14 @@ class Worker extends Client_1.Client {
     onStatusTask(callback) {
         this.taskEvent.on("statusTask", callback);
     }
+    sendTaskResult(result = null) {
+        if (this.server !== null)
+            this.server.task.taskResult(result);
+    }
+    sendTaskEnded(data = null) {
+        if (this.server !== null)
+            this.server.task.taskEnded(data);
+    }
     _internalActions(__this) {
         this.client.exports.launchTask = function (parameters) {
             //this.serverProxy is injected by eureca

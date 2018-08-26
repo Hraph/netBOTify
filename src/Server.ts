@@ -89,7 +89,10 @@ export class Server {
                 __this.serverEvent.emit("taskResult", result, this.clientProxy);
             },
             taskEnded: function(data: any) {
-                __this.serverEvent.emit("taskEnded", data, this.clientProxy);
+                __this.serverEvent.emit("taskEnded", data, this.clientProxy); //TODO pass the client identifier
+                __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
+                    client.taskStatus = TaskStatus.Idle;
+                });
             }
         };
 
