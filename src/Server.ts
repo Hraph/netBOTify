@@ -83,10 +83,13 @@ export class Server {
                 });
             },
             taskStatus: function (log: any) {
-
+                //TODO: implement
             },
             taskResult: function(result: any) {
                 __this.serverEvent.emit("taskResult", result, this.clientProxy);
+            },
+            taskEvent: function(eventName: string, data: any = null){
+                __this.serverEvent.emit("taskEvent:" + eventName, data);  
             },
             taskEnded: function(data: any) {
                 __this.serverEvent.emit("taskEnded", data, this.clientProxy); //TODO pass the client identifier
@@ -192,8 +195,13 @@ export class Server {
         webServer.listen(this.config.port);
     }
     
+    
     public onTaskResult(callback: (result: any, client: any) => void){
         this.serverEvent.on("taskResult", callback);
+    }
+    
+    public onTaskEvent(eventName: string, callback: (data: any, client: any) => void){
+        this.serverEvent.on("taskEvent:" + eventName, callback);
     }
     
     public onTaskEnded(callback: (data: any, client: any) => void){
