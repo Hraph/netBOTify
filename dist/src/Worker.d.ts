@@ -7,6 +7,7 @@ export declare class Worker extends Client {
     onStopTask(callback: (server: any) => void): void;
     onStatusTask(callback: (server: any) => void): void;
     sendTaskResult(result?: any): void;
+    sendTaskEvent(eventName: string, data?: any): void;
     sendTaskEnded(data?: any): void;
     private _internalActions;
 }

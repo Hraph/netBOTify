@@ -51,9 +51,14 @@ class Worker extends Client_1.Client {
         if (this.server !== null)
             this.server.task.taskResult(result);
     }
+    sendTaskEvent(eventName, data = null) {
+        if (this.server !== null)
+            this.server.task.taskEvent(eventName, data);
+    }
     sendTaskEnded(data = null) {
         if (this.server !== null)
             this.server.task.taskEnded(data);
+        this.identifier.taskStatus = ClientIdentifier_1.TaskStatus.Idle;
     }
     _internalActions(__this) {
         this.client.exports.launchTask = function (parameters) {
@@ -74,6 +79,7 @@ class Worker extends Client_1.Client {
         };
         this.client.exports.statusTask = function () {
             //this.serverProxy is injected by eureca
+            //TODO: implement
             __this.taskEvent.emit("statusTask", __this.server);
         };
     }

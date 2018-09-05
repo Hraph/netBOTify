@@ -13,6 +13,7 @@ export declare class Server {
      */
     connect(): void;
     onTaskResult(callback: (result: any, client: any) => void): void;
+    onTaskEvent(eventName: string, callback: (data: any, client: any) => void): void;
     onTaskEnded(callback: (data: any, client: any) => void): void;
     addTaskParameter(key: string, defaultValue: any, value?: any): void;
     addServerAction(name: string, callback: Function): void;

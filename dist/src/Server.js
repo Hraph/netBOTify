@@ -64,9 +64,13 @@ class Server {
                 });
             },
             taskStatus: function (log) {
+                //TODO: implement
             },
             taskResult: function (result) {
                 __this.serverEvent.emit("taskResult", result, this.clientProxy);
+            },
+            taskEvent: function (eventName, data = null) {
+                __this.serverEvent.emit("taskEvent:" + eventName, data);
             },
             taskEnded: function (data) {
                 __this.serverEvent.emit("taskEnded", data, this.clientProxy); //TODO pass the client identifier
@@ -161,6 +165,9 @@ class Server {
     }
     onTaskResult(callback) {
         this.serverEvent.on("taskResult", callback);
+    }
+    onTaskEvent(eventName, callback) {
+        this.serverEvent.on("taskEvent:" + eventName, callback);
     }
     onTaskEnded(callback) {
         this.serverEvent.on("taskEnded", callback);

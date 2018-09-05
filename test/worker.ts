@@ -11,7 +11,7 @@ let worker = new Worker({
 
 worker.onLaunchTask((parameters: TaskParameterList, server: any) => {
     console.log("launch", parameters);
-
+    worker.sendTaskEvent("hello", ["h", "e", "l", "l", "o"]);
 });
 
 worker.onStopTask((server: any) => {
