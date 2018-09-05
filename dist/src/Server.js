@@ -97,17 +97,23 @@ class Server {
             },
             unsubscribe: function () {
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
-                    var index = __this.subscribedCLISToEvents.indexOf(client.token); //Find existing token
+                    let index = __this.subscribedCLISToEvents.indexOf(client.token); //Find existing token
                     if (index !== -1) {
                         __this.subscribedCLISToEvents.splice(index, 1); //Remove item
                     }
                 });
             },
-            getWorkers: function () {
-                return __this.clients.filter(client => client.clientType == ClientIdentifier_1.ClientType.Worker);
+            getWorkers: function (clientId = null) {
+                return __this.clients.filter(client => {
+                    //Custom filter if clientId parameter is set
+                    return (clientId !== null) ? (client.clientType == ClientIdentifier_1.ClientType.Worker && client.clientId.startsWith(clientId)) : (client.clientType == ClientIdentifier_1.ClientType.Worker);
+                });
             },
-            getCLIs: function () {
-                return __this.clients.filter(client => client.clientType == ClientIdentifier_1.ClientType.RemoteCLI);
+            getCLIs: function (clientId = null) {
+                return __this.clients.filter(client => {
+                    //Custom filter if clientId parameter is set
+                    return (clientId !== null) ? (client.clientType == ClientIdentifier_1.ClientType.RemoteCLI && client.clientId.startsWith(clientId)) : (client.clientType == ClientIdentifier_1.ClientType.RemoteCLI);
+                });
             },
             getParameters: function () {
                 return __this.taskParameters;

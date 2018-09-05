@@ -143,10 +143,9 @@ export class RemoteCLI extends Client {
             
         //Workers
         vorpal
-            .command('workers', 'Get server connected workers')
+            .command('workers [clientId]', 'Get server connected workers')
             .action((args: any, callback: Function) => {
-                console.log(args);
-                __this._executeDistantCommand("getWorkers")
+                __this._executeDistantCommand("getWorkers", args.clientId)
                     .catch(__this._serverInvalidCommandError)
                     .then((result: any) => {
                         vorpal.log(result.length + " workers");
@@ -157,9 +156,9 @@ export class RemoteCLI extends Client {
         
         //CLIs
         vorpal
-            .command('clis', 'Get server connected CLIs')
+            .command('clis [clientId]', 'Get server connected CLIs')
             .action((args: any, callback: Function) => {
-                __this._executeDistantCommand("getCLIs")
+                __this._executeDistantCommand("getCLIs", args.clientId)
                     .catch(__this._serverInvalidCommandError)
                     .then((result: any) => {
                         vorpal.log(result.length + " CLIs");

@@ -123,11 +123,17 @@ export class Server {
                     }
                 });
             },
-            getWorkers: function() {
-                return __this.clients.filter(client => client.clientType == ClientType.Worker);
+            getWorkers: function(clientId: any = null) {
+                return __this.clients.filter(client => {
+                    //Custom filter if clientId parameter is set
+                    return (clientId !== null) ? (client.clientType == ClientType.Worker && client.clientId.startsWith(clientId)) : (client.clientType == ClientType.Worker);
+                });
             },
-            getCLIs: function() {
-                return __this.clients.filter(client => client.clientType == ClientType.RemoteCLI);
+            getCLIs: function(clientId: any = null) {
+                return __this.clients.filter(client => {
+                    //Custom filter if clientId parameter is set
+                    return (clientId !== null) ? (client.clientType == ClientType.RemoteCLI && client.clientId.startsWith(clientId)) : (client.clientType == ClientType.RemoteCLI);
+                });
             },
             getParameters: function() {
                 return __this.taskParameters;
