@@ -11,8 +11,12 @@ class RemoteCLI extends Client_1.Client {
         let __this = this; //Keep context
         this.taskEvent = new EventEmitter();
         this.identifier.clientType = ClientIdentifier_1.ClientType.RemoteCLI;
+        //##################### CLIENT EVENTS #####################
         this.client.ready((serverProxy) => {
             logger_1.logger.cli().info("Connected to server");
+            //Auto subscribe config
+            if (config.autoSubscribe)
+                vorpal.exec("subscribe");
             //Launch vorpal
             vorpal.show();
         });
@@ -34,6 +38,11 @@ class RemoteCLI extends Client_1.Client {
                 logger_1.logger.cli().error('Unknown error', e);
             }
         });
+        //##################### CLI METHODS REGISTERING #####################
+        this.client.exports.CLIOnEvent = function (eventName, data = null, clientId) {
+            logger_1.logger.cli().info("EVENT %s (%s):", eventName, clientId.substr(0, 5), data); //Print the evnet with a shorten client id
+        };
+        //##################### VORPAL COMMANDS #####################
         //Define config delimiter
         if (!this.config.delimiter)
             this.config.delimiter = "netBOTify";
@@ -108,6 +117,7 @@ class RemoteCLI extends Client_1.Client {
         vorpal
             .command('workers', 'Get server connected workers')
             .action((args, callback) => {
+            console.log(args);
             __this._executeDistantCommand("getWorkers")
                 .catch(__this._serverInvalidCommandError)
                 .then((result) => {
@@ -125,6 +135,28 @@ class RemoteCLI extends Client_1.Client {
                 .then((result) => {
                 vorpal.log(result.length + " CLIs");
                 vorpal.log(cTable.getTable(result));
+                callback();
+            });
+        });
+        //Subscribe
+        vorpal
+            .command('subscribe', 'Subscribe to server worker events')
+            .action((args, callback) => {
+            __this._executeDistantCommand("subscribe")
+                .catch(__this._serverInvalidCommandError)
+                .then((result) => {
+                vorpal.log("Subscribed to server events");
+                callback();
+            });
+        });
+        //Unsubscribe
+        vorpal
+            .command('unsubscribe', 'Unsubscribe to server worker events')
+            .action((args, callback) => {
+            __this._executeDistantCommand("unsubscribe")
+                .catch(__this._serverInvalidCommandError)
+                .then((result) => {
+                vorpal.log("Unsubscribed to server events");
                 callback();
             });
         });

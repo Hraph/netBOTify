@@ -9,7 +9,8 @@ class Server {
     constructor(config = {}) {
         this.clients = [];
         this.config = {};
-        this.taskParameters = {};
+        this.taskParameters = {}; //Save the parameters for the next task launch
+        this.subscribedCLISToEvents = []; //Save the list of subscribed CLI
         this.config = config;
         let __this = this; //Keep context
         this.serverEvent = new EventEmitter();
@@ -26,7 +27,7 @@ class Server {
                 next();
             },
             prefix: "nbfy",
-            allow: ["launchTask", "stopTask", "statusTask"]
+            allow: ["launchTask", "stopTask", "statusTask", "CLIOnEvent"]
         });
         this.server.attach(webServer);
         this.server.on("unhandledMessage", function (msg) {
@@ -68,6 +69,7 @@ class Server {
             },
             taskResult: function (result) {
                 __this.serverEvent.emit("taskResult", result, this.clientProxy);
+                __this._sendEventToSubscribedCLIs("taskResult", result, this.user.clientId); //Send task event to subscribed CLIS
             },
             taskEvent: function (eventName, data = null) {
                 __this.serverEvent.emit("taskEvent:" + eventName, data);
@@ -77,6 +79,7 @@ class Server {
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
                     client.taskStatus = ClientIdentifier_1.TaskStatus.Idle;
                 });
+                __this._sendEventToSubscribedCLIs("taskEnded", data, this.user.clientId); //Send task event to subscribed CLIS
             }
         };
         this.server.exports.cli = {
@@ -85,6 +88,20 @@ class Server {
                     client.latestReceivedPingTimestamp = Date.now();
                 });
                 return "pong";
+            },
+            subscribe: function () {
+                __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
+                    if (__this.subscribedCLISToEvents.indexOf(client.token) === -1) //Check if cli token is not already in list
+                        __this.subscribedCLISToEvents.push(client.token);
+                });
+            },
+            unsubscribe: function () {
+                __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
+                    var index = __this.subscribedCLISToEvents.indexOf(client.token); //Find existing token
+                    if (index !== -1) {
+                        __this.subscribedCLISToEvents.splice(index, 1); //Remove item
+                    }
+                });
             },
             getWorkers: function () {
                 return __this.clients.filter(client => client.clientType == ClientIdentifier_1.ClientType.Worker);
@@ -142,6 +159,12 @@ class Server {
                 });
             }
         };
+    }
+    _sendEventToSubscribedCLIs(eventName, data = null, clientId) {
+        this.clients.filter(client => (client.clientType == ClientIdentifier_1.ClientType.RemoteCLI && this.subscribedCLISToEvents.indexOf(client.token) !== -1)) //Get subscribed clients wich are CLIS
+            .forEach(client => {
+            this.server.getClient(client.clientId).CLIOnEvent(eventName, data, clientId); //Send event
+        });
     }
     _saveTaskParameters(parameters = {}) {
         //Treat input parameters

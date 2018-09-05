@@ -5,8 +5,10 @@ export declare class Server {
     private server;
     private taskParameters;
     private serverEvent;
+    private subscribedCLISToEvents;
     constructor(config?: any);
     private _internalActions;
+    private _sendEventToSubscribedCLIs;
     private _saveTaskParameters;
     /**
      * Launch server

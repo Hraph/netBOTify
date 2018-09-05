@@ -13,5 +13,7 @@ worker.onLaunchTask((parameters, server) => {
 });
 worker.onStopTask((server) => {
     console.log("stop");
+    worker.sendTaskResult("Ok");
+    worker.sendTaskEnded();
 });
 //# sourceMappingURL=worker.js.map
