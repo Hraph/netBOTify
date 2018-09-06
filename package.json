@@ -39,6 +39,7 @@
     "engine.io-client": "^3.2.1",
     "eureca.io": "^0.8.2",
     "express": "^4.16.3",
+    "fs-extra": "^7.0.0",
     "log4js": "^3.0.4",
     "vorpal": "^1.12.0"
   },

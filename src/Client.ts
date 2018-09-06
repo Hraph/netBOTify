@@ -20,12 +20,12 @@ export class Client {
         this.config = config;
 
         //Default identifier
-        if (!config.identifier)
-            this.identifier = new ClientIdentifier("defaultGroup", "defaultInstance");
-        else
-            this.identifier = config.identifier;
+        this.identifier = config.identifier ? config.identifier : new ClientIdentifier("defaultGroup", "defaultInstance");
 
-        //Create Eureca client
+        /**
+         * Client initialization
+         * @type {Eureca.Client}
+         */
         this.client = new EurecaClient({
             uri: (this.config.uri) ? this.config.uri : "http://localhost:8000/",
             prefix: "nbfy",

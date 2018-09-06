@@ -6,8 +6,10 @@ const EurecaServer = require("eureca.io").Server;
 const express = require('express')
     , app = express()
     , webServer = require('http').createServer(app)
-    , EventEmitter = require("events");
-    
+    , EventEmitter = require("events")
+    , fs = require('fs-extra');
+
+
 /** @ignore */
 declare var require: any;
 
@@ -19,12 +21,24 @@ export class Server {
     private taskParameters: TaskParameterList = {}; //Save the parameters for the next task launch
     private serverEvent: any;
     private subscribedCLISToEvents: string[] = []; //Save the list of subscribed CLI
+    private saveLogToDirectory: boolean = false;
+    private saveResultToFile: boolean = false;
 
     constructor(config: any = {}){
         this.config = config;
         let __this = this; //Keep context
         this.serverEvent = new EventEmitter();
 
+        /**
+         * Process config
+         */
+        this.saveLogToDirectory = (config.logDirectoryPath) ? true : false;
+        this.saveResultToFile = (config.resultFilePath) ? true : false;
+
+        /**
+         * Server initialization
+         * @type {Eureca.Server}
+         */
         this.server = new EurecaServer({
             authenticate: function(identifier: ClientIdentifier, next: Function){
                 try {
@@ -312,6 +326,31 @@ export class Server {
                     this.taskParameters[parameter.key] = parameter; //Update the local parameter
                 }
             };
+        }
+    }
+
+    /**
+     * Save the worker event to log file
+     * @param {ClientIdentifier} client
+     * @param {string} eventName
+     * @param data
+     * @private
+     */
+    private _saveWorkerLog(client: ClientIdentifier, eventName: string, data: any){
+        if (this.saveLogToDirectory !== null && client.clientType == ClientType.Worker){
+            //Create log directory architecture with /{groupId}/{instanceId}/{eventType.json}
+        }
+    }
+
+    /**
+     * Save the worker result to file
+     * @param {ClientIdentifier} client
+     * @param result
+     * @private
+     */
+    private _saveWorkerResult(client: ClientIdentifier, result: any){
+        if (this.saveResultToFile !== null && client.clientType == ClientType.Worker){
+
         }
     }
 
