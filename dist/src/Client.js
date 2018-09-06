@@ -22,6 +22,9 @@ class Client {
             prefix: "nbfy",
             autoConnect: (this.config.autoConnect) ? this.config.autoConnect : true,
         });
+        /**
+         * Client internal events handling
+         */
         this.client.ready((serverProxy) => {
             this.server = serverProxy;
             this.launchPing(serverProxy);
@@ -36,6 +39,15 @@ class Client {
         this.client.onDisconnect((socket) => {
             this.stopPing();
         });
+    }
+    /**
+     * Defines default Client config
+     * @param config
+     * @returns {{}}
+     * @private
+     */
+    _sanitizeConfig(config = {}) {
+        return config;
     }
     /**
      * Launch ping interval
@@ -65,15 +77,6 @@ class Client {
      */
     connect() {
         this.client.connect();
-    }
-    /**
-     * Defines default Client config
-     * @param config
-     * @returns {{}}
-     * @private
-     */
-    _sanitizeConfig(config = {}) {
-        return config;
     }
     /**
      * Add an item to config

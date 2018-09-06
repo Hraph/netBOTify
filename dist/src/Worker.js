@@ -7,11 +7,13 @@ const EventEmitter = require("events");
 class Worker extends Client_1.Client {
     constructor(config = {}) {
         super(config); //Create client
-        let __this = this; //Keep context
         this.taskEvent = new EventEmitter();
         this.client.ready((serverProxy) => {
             logger_1.logger.worker().info('Connected to server');
         });
+        /**
+         * Client internal events handling
+         */
         this.client.onConnect((client) => {
             if (this.client.isReady()) //Client reconnected
                 logger_1.logger.worker().info('Reconnected to server');
@@ -38,29 +40,16 @@ class Worker extends Client_1.Client {
         });
         this._internalActions(this);
     }
-    onLaunchTask(callback) {
-        this.taskEvent.on("launchTask", callback);
-    }
-    onStopTask(callback) {
-        this.taskEvent.on("stopTask", callback);
-    }
-    onStatusTask(callback) {
-        this.taskEvent.on("statusTask", callback);
-    }
-    sendTaskResult(result = null) {
-        if (this.server !== null)
-            this.server.task.taskResult(result);
-    }
-    sendTaskEvent(eventName, data = null) {
-        if (this.server !== null)
-            this.server.task.taskEvent(eventName, data);
-    }
-    sendTaskEnded(data = null) {
-        if (this.server !== null)
-            this.server.task.taskEnded(data);
-        this.identifier.taskStatus = ClientIdentifier_1.TaskStatus.Idle;
-    }
+    /**
+     * Define all internal RPC methods callable for the worker
+     * @param {Worker} __this
+     * @private
+     */
     _internalActions(__this) {
+        /**
+         * Action on task launch from the server
+         * @param {TaskParameterList} parameters
+         */
         this.client.exports.launchTask = function (parameters) {
             //this.serverProxy is injected by eureca
             __this.taskEvent.emit("launchTask", parameters, __this.server);
@@ -69,6 +58,9 @@ class Worker extends Client_1.Client {
             });
             __this.identifier.taskStatus = ClientIdentifier_1.TaskStatus.Running;
         };
+        /**
+         * Action on task stop from the server
+         */
         this.client.exports.stopTask = function () {
             //this.serverProxy is injected by eureca
             __this.taskEvent.emit("stopTask", __this.server);
@@ -77,11 +69,61 @@ class Worker extends Client_1.Client {
             });
             __this.identifier.taskStatus = ClientIdentifier_1.TaskStatus.Idle;
         };
+        /**
+         * Action on status request from the server
+         */
         this.client.exports.statusTask = function () {
             //this.serverProxy is injected by eureca
             //TODO: implement
             __this.taskEvent.emit("statusTask", __this.server);
         };
+    }
+    /**
+     * Add handler on task launch request event
+     * @param {(parameters: TaskParameterList, server: any) => void} callback
+     */
+    onLaunchTask(callback) {
+        this.taskEvent.on("launchTask", callback);
+    }
+    /**
+     * Add handler on task stop request event
+     * @param {(server: any) => void} callback
+     */
+    onStopTask(callback) {
+        this.taskEvent.on("stopTask", callback);
+    }
+    /**
+     * Add handler on task end request event
+     * @param {(server: any) => void} callback
+     */
+    onStatusTask(callback) {
+        this.taskEvent.on("statusTask", callback);
+    }
+    /**
+     * Send the task result to the server
+     * @param result
+     */
+    sendTaskResult(result = null) {
+        if (this.server !== null)
+            this.server.task.taskResult(result);
+    }
+    /**
+     * Send a custom event to the server
+     * @param {string} eventName
+     * @param data
+     */
+    sendTaskEvent(eventName, data = null) {
+        if (this.server !== null)
+            this.server.task.taskEvent(eventName, data);
+    }
+    /**
+     * Send task end status to the server
+     * @param data
+     */
+    sendTaskEnded(data = null) {
+        if (this.server !== null)
+            this.server.task.taskEnded(data);
+        this.identifier.taskStatus = ClientIdentifier_1.TaskStatus.Idle;
     }
 }
 exports.Worker = Worker;
