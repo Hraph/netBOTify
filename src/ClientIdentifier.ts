@@ -9,7 +9,6 @@ export enum TaskStatus {
     Error
 }
 
-
 export class ClientIdentifier {
     public clientType: ClientType = ClientType.Worker;
     public clientId: any = null;

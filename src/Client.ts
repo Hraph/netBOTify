@@ -16,6 +16,55 @@ export class Client {
     private pingIntervalSecond: number = 5;
     private pingTimeoutSecond: number = 2;
 
+    protected constructor(config: any = {}){
+        this.config = config;
+
+        //Default identifier
+        if (!config.identifier)
+            this.identifier = new ClientIdentifier("defaultGroup", "defaultInstance");
+        else
+            this.identifier = config.identifier;
+
+        //Create Eureca client
+        this.client = new EurecaClient({
+            uri: (this.config.uri) ? this.config.uri : "http://localhost:8000/",
+            prefix: "nbfy",
+            autoConnect: (this.config.autoConnect) ? this.config.autoConnect : true,
+        });
+
+        /**
+         * Client internal events handling
+         */
+        this.client.ready((serverProxy: any) => { //Triggered when authenticated
+            this.server = serverProxy;
+            this.launchPing(serverProxy);
+        });
+
+        this.client.onConnect((client: any) => {
+            if (this.client.isReady()) //Client was already connected but is now reconnecting : increment reconnect count
+                ++this.identifier.reconnect;
+            
+            this.client.authenticate(this.identifier); //Authenticate when connect
+
+            if (this.client.isReady()) //Client was already connected but is now reconnecting : now relaunch ping while it's authenticated
+                this.launchPing(client._proxy);
+        });
+
+        this.client.onDisconnect((socket: any) => {
+            this.stopPing();
+        });
+    }
+
+    /**
+     * Defines default Client config
+     * @param config
+     * @returns {{}}
+     * @private
+     */
+    private _sanitizeConfig(config: any = {}): {}{
+        return config;
+    }
+
     /**
      * Launch ping interval
      * @param server
@@ -40,42 +89,6 @@ export class Client {
     protected stopPing(){
         clearInterval(this.pingInterval);
     }
-
-    protected constructor(config: any = {}){
-        this.config = config;
-
-        //Default identifier
-        if (!config.identifier)
-            this.identifier = new ClientIdentifier("defaultGroup", "defaultInstance");
-        else
-            this.identifier = config.identifier;
-
-        //Create Eureca client
-        this.client = new EurecaClient({
-            uri: (this.config.uri) ? this.config.uri : "http://localhost:8000/",
-            prefix: "nbfy",
-            autoConnect: (this.config.autoConnect) ? this.config.autoConnect : true,
-        });
-
-        this.client.ready((serverProxy: any) => { //Triggered when authenticated
-            this.server = serverProxy;
-            this.launchPing(serverProxy);
-        });
-
-        this.client.onConnect((client: any) => {
-            if (this.client.isReady()) //Client was already connected but is now reconnecting : increment reconnect count
-                ++this.identifier.reconnect;
-            
-            this.client.authenticate(this.identifier); //Authenticate when connect
-
-            if (this.client.isReady()) //Client was already connected but is now reconnecting : now relaunch ping while it's authenticated
-                this.launchPing(client._proxy);
-        });
-
-        this.client.onDisconnect((socket: any) => {
-            this.stopPing();
-        });
-    }
     
     /**
      * Manually connect to the server
@@ -83,16 +96,6 @@ export class Client {
      */
     public connect(){
         this.client.connect();
-    }
-
-    /**
-     * Defines default Client config
-     * @param config
-     * @returns {{}}
-     * @private
-     */
-    private _sanitizeConfig(config: any = {}): {}{
-        return config;
     }
 
     /**

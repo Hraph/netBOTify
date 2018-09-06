@@ -1,5 +1,4 @@
-import {Server} from '../src/Server';
-import {TaskParameter} from "../src/TaskParameter";
+import {Server} from '../src';
 
 let server = new Server({
     port: 8000

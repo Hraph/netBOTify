@@ -22,7 +22,9 @@ export class RemoteCLI extends Client {
         this.taskEvent = new EventEmitter();
         this.identifier.clientType = ClientType.RemoteCLI;
 
-        //##################### CLIENT EVENTS #####################
+        /**
+         * Client internal events handling
+         */
         this.client.ready((serverProxy: any) => {
             logger.cli().info("Connected to server");
 
@@ -54,22 +56,33 @@ export class RemoteCLI extends Client {
                 logger.cli().error('Unknown error', e);
             }
         });
-        
-        //##################### CLI METHODS REGISTERING #####################
-        this.client.exports.CLIOnEvent = function(eventName: string, data: any = null, clientId: string) {
-            logger.cli().info("EVENT %s (%s):", eventName, clientId.substr(0,5), data); //Print the evnet with a shorten client id
-        }
-        
-        //##################### VORPAL COMMANDS #####################
-        //Define config delimiter
-        if (!this.config.delimiter)
-            this.config.delimiter = "netBOTify";
 
-        //Vorpal config
-        vorpal
-            .delimiter(this.config.delimiter + '$');
-            
-        //Ping
+
+        /**
+         * CLI RPC methods registering
+         */
+
+        /**
+         * Process when an event is forwarded from the server to the CLI
+         * @param {string} eventName: The custom event name
+         * @param data: Optional parameters
+         * @param {string} clientId: The client od of the origin worker
+         * @constructor
+         */
+        this.client.exports.CLIOnEvent = function(eventName: string, data: any = null, clientId: string) {
+            logger.cli().info("EVENT %s (%s):", eventName, clientId.substr(0,5), data); //Print the event with a shorten client id
+        }
+
+
+        /**
+         * Vorpal commands definition
+         */
+        if (!this.config.delimiter) this.config.delimiter = "netBOTify"; //Default delimiter
+        vorpal.delimiter(this.config.delimiter + '$');
+
+        /**
+         * Ping command
+         */
         vorpal
             .command('ping', 'Ping the server.')
             .action((args: any, callback: Function) => {
@@ -78,10 +91,12 @@ export class RemoteCLI extends Client {
                     callback();
                 });
             });
-            
-        //Launch
+
+        /**
+         * Launch task command
+         */
         vorpal
-            .command('launch', 'Launch the task on workers.')
+            .command('launch [clientId]', 'Launch the task on workers.')
             .option('-f, --force', "Force sending start even if it's already launched")
             .action(function(args: any, callback: Function) {
                 let setParametersCommandPromise = [];
@@ -97,7 +112,7 @@ export class RemoteCLI extends Client {
                 
                 //Parameters has been set
                 Promise.all(setParametersCommandPromise).then(() => {
-                    __this._executeDistantCommand("launchTask", __this.taskParameters, args.options.force)  //Execute task with parameters
+                    __this._executeDistantCommand("launchTask", __this.taskParameters, args.clientId, args.options.force)  //Execute task with parameters
                         .catch(__this._serverInvalidCommandError)
                         .then((result: any) => {
                             vorpal.log("%d worker's task launched of %d worker%s", result.success, result.total, (result.total >= 2) ? "s" : "");
@@ -106,8 +121,25 @@ export class RemoteCLI extends Client {
                 });
                 
             });
-            
-        //Parameters
+
+        /**
+         * Stop task command
+         */
+        vorpal
+            .command('stop [clientId]', 'Stop the task on workers.')
+            .option('-f, --force', "Force sending stop even if it's already stopped")
+            .action((args: any, callback: Function) => {
+                __this._executeDistantCommand("stopTask", args.clientId, args.options.force)
+                    .catch(__this._serverInvalidCommandError)
+                    .then((result: any) => {
+                        vorpal.log("%d worker's task stopped of %d worker%s", result.success, result.total, (result.total >= 2) ? "s" : "");
+                        callback();
+                    });
+            });
+
+        /**
+         * Parameters setup command
+         */
         vorpal
             .command('parameters', 'Manage task parameters.')
             .option("-r, --reload", "Erase and reload the current parameters from the server.")
@@ -127,23 +159,12 @@ export class RemoteCLI extends Client {
                         callback();
                 });
             });
-            
-        //Stop
+
+        /**
+         * List of connected workers command
+         */
         vorpal
-            .command('stop', 'Stop the task on workers.')
-            .option('-f, --force', "Force sending stop even if it's already stopped")
-            .action((args: any, callback: Function) => {
-                __this._executeDistantCommand("stopTask", args.options.force)
-                    .catch(__this._serverInvalidCommandError)
-                    .then((result: any) => {
-                        vorpal.log("%d worker's task stopped of %d worker%s", result.success, result.total, (result.total >= 2) ? "s" : "");
-                        callback();
-                    });
-            });
-            
-        //Workers
-        vorpal
-            .command('workers [clientId]', 'Get server connected workers')
+            .command('workers [clientId]', 'Get server connected workers.')
             .action((args: any, callback: Function) => {
                 __this._executeDistantCommand("getWorkers", args.clientId)
                     .catch(__this._serverInvalidCommandError)
@@ -153,10 +174,12 @@ export class RemoteCLI extends Client {
                         callback();
                     });
             });
-        
-        //CLIs
+
+        /**
+         * List of connected CLIs command
+         */
         vorpal
-            .command('clis [clientId]', 'Get server connected CLIs')
+            .command('clis [clientId]', 'Get server connected CLIs.')
             .action((args: any, callback: Function) => {
                 __this._executeDistantCommand("getCLIs", args.clientId)
                     .catch(__this._serverInvalidCommandError)
@@ -166,11 +189,12 @@ export class RemoteCLI extends Client {
                         callback();
                     });
             });
-            
-        
-        //Subscribe
+
+        /**
+         * Subscribe to worker events command
+         */
         vorpal
-            .command('subscribe', 'Subscribe to server worker events')
+            .command('subscribe', 'Subscribe to server worker events.')
             .action((args: any, callback: Function) => {
                 __this._executeDistantCommand("subscribe")
                     .catch(__this._serverInvalidCommandError)
@@ -179,10 +203,12 @@ export class RemoteCLI extends Client {
                         callback();
                     });
             });
-            
-        //Unsubscribe
+
+        /**
+         * Unsubscribe to worker events command
+         */
         vorpal
-            .command('unsubscribe', 'Unsubscribe to server worker events')
+            .command('unsubscribe', 'Unsubscribe to server worker events.')
             .action((args: any, callback: Function) => {
                 __this._executeDistantCommand("unsubscribe")
                     .catch(__this._serverInvalidCommandError)
@@ -191,17 +217,16 @@ export class RemoteCLI extends Client {
                         callback();
                     });
             });
+    }
 
-    }
-    
-    public addCommand(commandWord: string, commandDescription: string, callback: (args: any, callback: Function) => void){
-        vorpal
-            .command(commandWord, commandDescription)
-            .action((vorpalArgs: any, vorpalCallback: Function) => {
-                callback(vorpalArgs, vorpalCallback);   
-            });
-    }
-    
+    /**
+     * Setup the registered parameters
+     * Retrieve parameters on the server on the first setup
+     * @param vorpalCommand: Attach the setup to a vorpal command
+     * @param {boolean} reloadAll: Get new parameters from server at every calls
+     * @returns {Promise<any>}
+     * @private
+     */
     private _setupTaskParameters(vorpalCommand: any, reloadAll: boolean = false){
         return new Promise((resolve, reject) => {
             let getTaskParametersPromise = []; //Save promises
@@ -256,7 +281,12 @@ export class RemoteCLI extends Client {
             }); 
         });
     }
-    
+
+    /**
+     * Get the registered parameters on the server
+     * @returns {Promise<any>}
+     * @private
+     */
     private _getServerTaskParameters(){
         return new Promise((resolve, reject) => {
             this.server.cli["getParameters"]().then((parameters: TaskParameterList) => {
@@ -266,6 +296,13 @@ export class RemoteCLI extends Client {
         })
     }
 
+    /**
+     * Execute a CLI command on the server
+     * @param {string} commandName
+     * @param parameters
+     * @returns {Promise<any>}
+     * @private
+     */
     private _executeDistantCommand(commandName: string, ...parameters: any[]){
         return new Promise((resolve, reject) => {
             try {
@@ -279,8 +316,27 @@ export class RemoteCLI extends Client {
         });
     }
 
+    /**
+     * Error handler to invalid command
+     * @param e
+     * @private
+     */
     private _serverInvalidCommandError(e: any){
         logger.cli().error("Error in command ", e);
+    }
+
+    /**
+     * Add a custom command to the CLI
+     * @param {string} commandWord
+     * @param {string} commandDescription
+     * @param {(args: any, callback: Function) => void} callback
+     */
+    public addCommand(commandWord: string, commandDescription: string, callback: (args: any, callback: Function) => void){
+        vorpal
+            .command(commandWord, commandDescription)
+            .action((vorpalArgs: any, vorpalCallback: Function) => {
+                callback(vorpalArgs, vorpalCallback);
+            });
     }
 
 }

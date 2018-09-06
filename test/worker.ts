@@ -1,5 +1,5 @@
-import {Worker} from '../src/Worker';
-import {ClientIdentifier} from '../src/ClientIdentifier';
+import {Worker} from '../src';
+import {ClientIdentifier} from '../src';
 import {TaskParameter, TaskParameterList} from "../src/TaskParameter";
 
 let identifier = new ClientIdentifier("group1", "1");
