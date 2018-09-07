@@ -16,6 +16,6 @@ worker.onLaunchTask((parameters: TaskParameterList, server: any) => {
 
 worker.onStopTask((server: any) => {
     console.log("stop");
-    worker.sendTaskResult("Ok");
+    worker.sendTaskResult({didier: "ok"});
     worker.sendTaskEnded();
 });

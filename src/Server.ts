@@ -168,8 +168,6 @@ export class Server {
                     client.taskStatus = TaskStatus.Idle;
                     __this._saveWorkerLog(client, "taskStatus", "ENDED: " + data); //Save to log
                 });
-                
-                __this._sendEventToSubscribedCLIs("taskEnded", data, this.user.clientId); //Send task event to subscribed CLIS
             }
         };
 
@@ -358,8 +356,9 @@ export class Server {
         if (this.saveLogToDirectory && client.clientType == ClientType.Worker){
             let __this = this; //Keep context
             
-            let formatedData = "[" + (new Date).toISOString() + "] - " + data + "\n";
-            let logPath = path.join(this.config.logDirectoryPath, client.groupId, client.instanceId, eventName + '.json'); //Log directory is /{groupId}/{instanceId}/{eventType.json}
+            let castedData = (typeof data == "object") ? JSON.stringify(data) : data;
+            let formatedData = "[" + (new Date).toISOString() + "] - " + castedData + "\n";
+            let logPath = path.join(this.config.logDirectoryPath, client.groupId, client.instanceId + "." + eventName + '.json'); //Log directory is /{groupId}/{instanceId}.{eventType.json}
             
             function processErr(err: any){
                 logger.server().error('Unable to save log: ', err);
@@ -383,8 +382,9 @@ export class Server {
         if (this.saveResultToFile && client.clientType == ClientType.Worker){
             let __this = this; //Keep context
             
-            let formatedData = "[" + (new Date).toISOString() + "] - " + result + "\n";
-            
+            let castedData = (typeof result == "object") ? JSON.stringify(result) : result;
+            let formatedData = "[" + (new Date).toISOString() + "] - " + castedData + "\n";
+
             function processErr(err: any){
                 logger.server().error('Unable to save result: ', err);
                 __this._sendEventToSubscribedCLIs("saveResultError", "Save log result " + err, client.clientId);
