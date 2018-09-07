@@ -6,17 +6,15 @@ class Client {
     constructor(config = {}) {
         this.config = {};
         this.server = null;
-        this.pingInterval = 0;
-        this.pingTimeout = 0;
         this.pingIntervalSecond = 5;
         this.pingTimeoutSecond = 2;
         this.config = config;
         //Default identifier
-        if (!config.identifier)
-            this.identifier = new ClientIdentifier_1.ClientIdentifier("defaultGroup", "defaultInstance");
-        else
-            this.identifier = config.identifier;
-        //Create Eureca client
+        this.identifier = config.identifier ? config.identifier : new ClientIdentifier_1.ClientIdentifier("defaultGroup", "defaultInstance");
+        /**
+         * Client initialization
+         * @type {Eureca.Client}
+         */
         this.client = new EurecaClient({
             uri: (this.config.uri) ? this.config.uri : "http://localhost:8000/",
             prefix: "nbfy",

@@ -6,6 +6,8 @@ export declare class Server {
     private taskParameters;
     private serverEvent;
     private subscribedCLISToEvents;
+    private saveLogToDirectory;
+    private saveResultToFile;
     constructor(config?: any);
     /**
      * Define all internal RPC methods callable from the clients
@@ -27,6 +29,21 @@ export declare class Server {
      * @private
      */
     private _saveTaskParameters;
+    /**
+     * Save the worker event to log file
+     * @param {ClientIdentifier} client
+     * @param {string} eventName
+     * @param data
+     * @private
+     */
+    private _saveWorkerLog;
+    /**
+     * Save the worker result to file
+     * @param {ClientIdentifier} client
+     * @param result
+     * @private
+     */
+    private _saveWorkerResult;
     /**
      * Launch the server
      */

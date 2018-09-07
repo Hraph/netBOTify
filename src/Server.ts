@@ -7,7 +7,8 @@ const express = require('express')
     , app = express()
     , webServer = require('http').createServer(app)
     , EventEmitter = require("events")
-    , fs = require('fs-extra');
+    , fs = require('fs-extra')
+    , path = require('path');
 
 
 /** @ignore */
@@ -108,6 +109,7 @@ export class Server {
             taskLaunched: function () {
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
                     client.taskStatus = TaskStatus.Running;
+                    __this._saveWorkerLog(client, "taskStatus", "LAUNCH"); //Save to log
                 });
             },
             /**
@@ -116,6 +118,7 @@ export class Server {
             taskStopped: function () {
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
                     client.taskStatus = TaskStatus.Idle;
+                    __this._saveWorkerLog(client, "taskStatus", "STOP"); //Save to log
                 });
             },
             /**
@@ -131,7 +134,14 @@ export class Server {
              */
             taskResult: function(result: any) {
                 __this.serverEvent.emit("taskResult", result, this.clientProxy);
+                
+                //Send to clis
                 __this._sendEventToSubscribedCLIs("taskResult", result, this.user.clientId); //Send task event to subscribed CLIS
+                
+                __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
+                    __this._saveWorkerResult(client, result); //Save to log
+                });
+                
             },
             /**
              * Action when a custom event is emitted from a worker task
@@ -141,6 +151,11 @@ export class Server {
              */
             taskEvent: function(eventName: string, data: any = null){
                 __this.serverEvent.emit("taskEvent:" + eventName, data);  
+                
+                //Save to log
+                __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
+                    __this._saveWorkerLog(client, eventName, data);
+                });
             },
             /**
              * Action when the task is ended
@@ -148,9 +163,12 @@ export class Server {
              */
             taskEnded: function(data: any) {
                 __this.serverEvent.emit("taskEnded", data, this.clientProxy); //TODO pass the client identifier
+                
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
                     client.taskStatus = TaskStatus.Idle;
+                    __this._saveWorkerLog(client, "taskStatus", "ENDED: " + data); //Save to log
                 });
+                
                 __this._sendEventToSubscribedCLIs("taskEnded", data, this.user.clientId); //Send task event to subscribed CLIS
             }
         };
@@ -337,8 +355,21 @@ export class Server {
      * @private
      */
     private _saveWorkerLog(client: ClientIdentifier, eventName: string, data: any){
-        if (this.saveLogToDirectory !== null && client.clientType == ClientType.Worker){
-            //Create log directory architecture with /{groupId}/{instanceId}/{eventType.json}
+        if (this.saveLogToDirectory && client.clientType == ClientType.Worker){
+            let __this = this; //Keep context
+            
+            let formatedData = "[" + (new Date).toISOString() + "] - " + data + "\n";
+            let logPath = path.join(this.config.logDirectoryPath, client.groupId, client.instanceId, eventName + '.json'); //Log directory is /{groupId}/{instanceId}/{eventType.json}
+            
+            function processErr(err: any){
+                logger.server().error('Unable to save log: ', err);
+                __this._sendEventToSubscribedCLIs("saveLogError", "Save log error " + err, client.clientId);
+            }
+            
+            //Create directory if not exists and write to file
+            fs.ensureFile(logPath).then(() => {
+                fs.appendFile(logPath, formatedData).catch(processErr);
+            }).catch(processErr);
         }
     }
 
@@ -349,8 +380,20 @@ export class Server {
      * @private
      */
     private _saveWorkerResult(client: ClientIdentifier, result: any){
-        if (this.saveResultToFile !== null && client.clientType == ClientType.Worker){
-
+        if (this.saveResultToFile && client.clientType == ClientType.Worker){
+            let __this = this; //Keep context
+            
+            let formatedData = "[" + (new Date).toISOString() + "] - " + result + "\n";
+            
+            function processErr(err: any){
+                logger.server().error('Unable to save result: ', err);
+                __this._sendEventToSubscribedCLIs("saveResultError", "Save log result " + err, client.clientId);
+            }
+            
+            //Create directory if not exists and write to file
+            fs.ensureFile(this.config.resultFilePath).then(() => {
+                fs.appendFile(this.config.resultFilePath, formatedData).catch(processErr);
+            }).catch(processErr);
         }
     }
 

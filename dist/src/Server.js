@@ -4,16 +4,27 @@ const ClientIdentifier_1 = require("./ClientIdentifier");
 const logger_1 = require("./logger");
 const TaskParameter_1 = require("./TaskParameter");
 const EurecaServer = require("eureca.io").Server;
-const express = require('express'), app = express(), webServer = require('http').createServer(app), EventEmitter = require("events");
+const express = require('express'), app = express(), webServer = require('http').createServer(app), EventEmitter = require("events"), fs = require('fs-extra'), path = require('path');
 class Server {
     constructor(config = {}) {
         this.clients = [];
         this.config = {};
         this.taskParameters = {}; //Save the parameters for the next task launch
         this.subscribedCLISToEvents = []; //Save the list of subscribed CLI
+        this.saveLogToDirectory = false;
+        this.saveResultToFile = false;
         this.config = config;
         let __this = this; //Keep context
         this.serverEvent = new EventEmitter();
+        /**
+         * Process config
+         */
+        this.saveLogToDirectory = (config.logDirectoryPath) ? true : false;
+        this.saveResultToFile = (config.resultFilePath) ? true : false;
+        /**
+         * Server initialization
+         * @type {Eureca.Server}
+         */
         this.server = new EurecaServer({
             authenticate: function (identifier, next) {
                 try {
@@ -75,6 +86,7 @@ class Server {
             taskLaunched: function () {
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
                     client.taskStatus = ClientIdentifier_1.TaskStatus.Running;
+                    __this._saveWorkerLog(client, "taskStatus", "LAUNCH"); //Save to log
                 });
             },
             /**
@@ -83,6 +95,7 @@ class Server {
             taskStopped: function () {
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
                     client.taskStatus = ClientIdentifier_1.TaskStatus.Idle;
+                    __this._saveWorkerLog(client, "taskStatus", "STOP"); //Save to log
                 });
             },
             /**
@@ -98,7 +111,11 @@ class Server {
              */
             taskResult: function (result) {
                 __this.serverEvent.emit("taskResult", result, this.clientProxy);
+                //Send to clis
                 __this._sendEventToSubscribedCLIs("taskResult", result, this.user.clientId); //Send task event to subscribed CLIS
+                __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
+                    __this._saveWorkerResult(client, result); //Save to log
+                });
             },
             /**
              * Action when a custom event is emitted from a worker task
@@ -108,6 +125,10 @@ class Server {
              */
             taskEvent: function (eventName, data = null) {
                 __this.serverEvent.emit("taskEvent:" + eventName, data);
+                //Save to log
+                __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
+                    __this._saveWorkerLog(client, eventName, data);
+                });
             },
             /**
              * Action when the task is ended
@@ -117,6 +138,7 @@ class Server {
                 __this.serverEvent.emit("taskEnded", data, this.clientProxy); //TODO pass the client identifier
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
                     client.taskStatus = ClientIdentifier_1.TaskStatus.Idle;
+                    __this._saveWorkerLog(client, "taskStatus", "ENDED: " + data); //Save to log
                 });
                 __this._sendEventToSubscribedCLIs("taskEnded", data, this.user.clientId); //Send task event to subscribed CLIS
             }
@@ -281,6 +303,48 @@ class Server {
                 }
             }
             ;
+        }
+    }
+    /**
+     * Save the worker event to log file
+     * @param {ClientIdentifier} client
+     * @param {string} eventName
+     * @param data
+     * @private
+     */
+    _saveWorkerLog(client, eventName, data) {
+        if (this.saveLogToDirectory && client.clientType == ClientIdentifier_1.ClientType.Worker) {
+            let __this = this; //Keep context
+            let formatedData = "[" + (new Date).toISOString() + "] - " + data + "\n";
+            let logPath = path.join(this.config.logDirectoryPath, client.groupId, client.instanceId, eventName + '.json'); //Log directory is /{groupId}/{instanceId}/{eventType.json}
+            function processErr(err) {
+                logger_1.logger.server().error('Unable to save log: ', err);
+                __this._sendEventToSubscribedCLIs("saveLogError", "Save log error " + err, client.clientId);
+            }
+            //Create directory if not exists and write to file
+            fs.ensureFile(logPath).then(() => {
+                fs.appendFile(logPath, formatedData).catch(processErr);
+            }).catch(processErr);
+        }
+    }
+    /**
+     * Save the worker result to file
+     * @param {ClientIdentifier} client
+     * @param result
+     * @private
+     */
+    _saveWorkerResult(client, result) {
+        if (this.saveResultToFile && client.clientType == ClientIdentifier_1.ClientType.Worker) {
+            let __this = this; //Keep context
+            let formatedData = "[" + (new Date).toISOString() + "] - " + result + "\n";
+            function processErr(err) {
+                logger_1.logger.server().error('Unable to save result: ', err);
+                __this._sendEventToSubscribedCLIs("saveResultError", "Save log result " + err, client.clientId);
+            }
+            //Create directory if not exists and write to file
+            fs.ensureFile(this.config.resultFilePath).then(() => {
+                fs.appendFile(this.config.resultFilePath, formatedData).catch(processErr);
+            }).catch(processErr);
         }
     }
     /**
