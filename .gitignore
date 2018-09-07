@@ -68,3 +68,5 @@ typings/
 package-lock.json
 
 builds
+
+result
