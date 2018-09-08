@@ -51,6 +51,11 @@ export class Server {
                 }
 
                 __this.clients.push(identifier);
+                
+                //Save connect log
+                if (identifier.clientId != null && identifier.token != null && identifier.clientType == ClientType.Worker)
+                    __this._saveWorkerLog(identifier, "workerStatus", "CONNECTED"); //Save to log
+                
                 next();
             },
             prefix: "nbfy",
@@ -67,10 +72,13 @@ export class Server {
 
         this.server.onConnect(function(connection: any) {
            logger.server().debug('Client %s connected', connection.id);
-           let client = connection.clientProxy;
         });
 
         this.server.onDisconnect(function (connection: any) {
+            __this.clients.filter(client => client.clientId == connection.id && client.clientType == ClientType.Worker).forEach(client => {
+                __this._saveWorkerLog(client, "workerStatus", "DISCONNECTED"); //Save to log
+            });
+            
             __this.clients = __this.clients.filter(client => client.clientId !== connection.id); //Remove client from clients
             logger.server().info('Client %s disconnected', connection.id);
         });
@@ -109,7 +117,7 @@ export class Server {
             taskLaunched: function () {
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
                     client.taskStatus = TaskStatus.Running;
-                    __this._saveWorkerLog(client, "taskStatus", "LAUNCH"); //Save to log
+                    __this._saveWorkerLog(client, "taskStatus", "LAUNCHED"); //Save to log
                 });
             },
             /**
@@ -118,7 +126,7 @@ export class Server {
             taskStopped: function () {
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
                     client.taskStatus = TaskStatus.Idle;
-                    __this._saveWorkerLog(client, "taskStatus", "STOP"); //Save to log
+                    __this._saveWorkerLog(client, "taskStatus", "STOPPED"); //Save to log
                 });
             },
             /**
@@ -357,8 +365,8 @@ export class Server {
             let __this = this; //Keep context
             
             let castedData = (typeof data == "object") ? JSON.stringify(data) : data;
-            let formatedData = "[" + (new Date).toISOString() + "] - " + castedData + "\n";
-            let logPath = path.join(this.config.logDirectoryPath, client.groupId, client.instanceId + "." + eventName + '.json'); //Log directory is /{groupId}/{instanceId}.{eventType.json}
+            let formatedData = "[" + (new Date).toISOString() + "] - " + "[" + eventName.toUpperCase() + "] - " + castedData + "\n";
+            let logPath = path.join(this.config.logDirectoryPath, client.groupId, client.instanceId + "." + client.token + ".log.json"); //Log directory is /{groupId}/{instanceId}.{token}.log.json
             
             function processErr(err: any){
                 logger.server().error('Unable to save log: ', err);
@@ -383,7 +391,7 @@ export class Server {
             let __this = this; //Keep context
             
             let castedData = (typeof result == "object") ? JSON.stringify(result) : result;
-            let formatedData = "[" + (new Date).toISOString() + "] - " + castedData + "\n";
+            let formatedData = "[" + (new Date).toISOString() + "] - " + "[" + client.token + "] - " + castedData + "\n";
 
             function processErr(err: any){
                 logger.server().error('Unable to save result: ', err);

@@ -25,7 +25,7 @@ class ClientIdentifier {
         this.token = this._generateHash();
     }
     _generateHash() {
-        return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        return Math.random().toString(36).substring(2, 15);
     }
 }
 exports.ClientIdentifier = ClientIdentifier;
