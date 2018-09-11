@@ -81,5 +81,5 @@ export declare class Server {
      * Declare a client RPC method callable from the server
      * @param {string} name
      */
-    addWorkerTask(name: string): void;
+    declareWorkerTask(name: string): void;
 }

@@ -36,7 +36,7 @@ export declare class RemoteCLI extends Client {
      * Add a custom command to the CLI
      * @param {string} commandWord
      * @param {string} commandDescription
-     * @param {(args: any, callback: Function) => void} callback
+     * @param {(args: any, endCommand: Function) => void} callback
      */
-    addCommand(commandWord: string, commandDescription: string, callback: (args: any, callback: Function) => void): void;
+    addCommand(commandWord: string, commandDescription: string, callback: (args: any, endCommand: Function) => void): void;
 }

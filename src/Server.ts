@@ -462,7 +462,7 @@ export class Server {
      * Declare a client RPC method callable from the server
      * @param {string} name
      */
-    public addWorkerTask(name: string){
+    public declareWorkerTask(name: string){
         this.server.settings.allow.push(name);
     }
 }

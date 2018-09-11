@@ -191,7 +191,7 @@ export class RemoteCLI extends Client {
             });
 
         /**
-         * Subscribe to worker events command
+         * Subscribe to the server (implicitly worker) events command
          */
         vorpal
             .command('subscribe', 'Subscribe to server worker events.')
@@ -329,9 +329,9 @@ export class RemoteCLI extends Client {
      * Add a custom command to the CLI
      * @param {string} commandWord
      * @param {string} commandDescription
-     * @param {(args: any, callback: Function) => void} callback
+     * @param {(args: any, endCommand: Function) => void} callback
      */
-    public addCommand(commandWord: string, commandDescription: string, callback: (args: any, callback: Function) => void){
+    public addCommand(commandWord: string, commandDescription: string, callback: (args: any, endCommand: Function) => void){
         vorpal
             .command(commandWord, commandDescription)
             .action((vorpalArgs: any, vorpalCallback: Function) => {
