@@ -8,6 +8,14 @@ export declare class Client {
     private pingTimeout;
     private pingIntervalSecond;
     private pingTimeoutSecond;
+    protected constructor(config?: any);
+    /**
+     * Defines default Client config
+     * @param config
+     * @returns {{}}
+     * @private
+     */
+    private _sanitizeConfig;
     /**
      * Launch ping interval
      * @param server
@@ -17,19 +25,11 @@ export declare class Client {
      * Stop ping to avoid flood if connection is lost
      */
     protected stopPing(): void;
-    protected constructor(config?: any);
     /**
      * Manually connect to the server
      * @public
      */
     connect(): void;
-    /**
-     * Defines default Client config
-     * @param config
-     * @returns {{}}
-     * @private
-     */
-    private _sanitizeConfig;
     /**
      * Add an item to config
      * @param {string} name

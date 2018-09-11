@@ -6,22 +6,23 @@ class Client {
     constructor(config = {}) {
         this.config = {};
         this.server = null;
-        this.pingInterval = 0;
-        this.pingTimeout = 0;
         this.pingIntervalSecond = 5;
         this.pingTimeoutSecond = 2;
         this.config = config;
         //Default identifier
-        if (!config.identifier)
-            this.identifier = new ClientIdentifier_1.ClientIdentifier("defaultGroup", "defaultInstance");
-        else
-            this.identifier = config.identifier;
-        //Create Eureca client
+        this.identifier = config.identifier ? config.identifier : new ClientIdentifier_1.ClientIdentifier("defaultGroup", "defaultInstance");
+        /**
+         * Client initialization
+         * @type {Eureca.Client}
+         */
         this.client = new EurecaClient({
             uri: (this.config.uri) ? this.config.uri : "http://localhost:8000/",
             prefix: "nbfy",
             autoConnect: (this.config.autoConnect) ? this.config.autoConnect : true,
         });
+        /**
+         * Client internal events handling
+         */
         this.client.ready((serverProxy) => {
             this.server = serverProxy;
             this.launchPing(serverProxy);
@@ -36,6 +37,15 @@ class Client {
         this.client.onDisconnect((socket) => {
             this.stopPing();
         });
+    }
+    /**
+     * Defines default Client config
+     * @param config
+     * @returns {{}}
+     * @private
+     */
+    _sanitizeConfig(config = {}) {
+        return config;
     }
     /**
      * Launch ping interval
@@ -65,15 +75,6 @@ class Client {
      */
     connect() {
         this.client.connect();
-    }
-    /**
-     * Defines default Client config
-     * @param config
-     * @returns {{}}
-     * @private
-     */
-    _sanitizeConfig(config = {}) {
-        return config;
     }
     /**
      * Add an item to config

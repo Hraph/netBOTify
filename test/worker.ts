@@ -1,5 +1,5 @@
-import {Worker} from '../src/Worker';
-import {ClientIdentifier} from '../src/ClientIdentifier';
+import {Worker} from '../src';
+import {ClientIdentifier} from '../src';
 import {TaskParameter, TaskParameterList} from "../src/TaskParameter";
 
 let identifier = new ClientIdentifier("group1", "1");
@@ -11,10 +11,11 @@ let worker = new Worker({
 
 worker.onLaunchTask((parameters: TaskParameterList, server: any) => {
     console.log("launch", parameters);
-
+    worker.sendTaskEvent("hello", ["h", "e", "l", "l", "o"]);
 });
 
 worker.onStopTask((server: any) => {
     console.log("stop");
-
+    worker.sendTaskResult({didier: "ok"});
+    worker.sendTaskEnded();
 });

@@ -15,31 +15,57 @@ Dynamic parameters can be defined at launch time.
 ## Installation
 
 ```npm install netbotify```
+
 ## Usage
-#### Server implementation
+
+- [Server usage](#server)
+- [Worker (bot) usage](#worker)
+- [Remote CLI usage](#cli)
+
+---
+### Server implementation <a id="server"></a>
+
+A server can easily be created with:
 ~~~~javascript
 const Netbotify = require("netbotify");
 
 // Create a server
 let server = new Netbotify.Server({
+    //Parameters
     port: 8000 // Server port to listen to
 });
-
-//Add parameters fot the workers
-server.addTaskParameter("parameterKey", "defaultValue"); // Value will be editable with "parameters" command in CLI
-server.addTaskParameter("id", "12345678");
-
 server.connect();
 ~~~~
+#### OPTIONAL server parameters
+- `port`: the server listening port (default 8000)
+- `logDirectoryPath`: directory path to save workers events (start / stop / launch / errors / ...)
+- `resultFilePath`: json file path to save all the results for all workers
 
-#### Worker (BOT) implementation
+#### Server extra methods
+
+- `.connect()`: launch the server on the specified port in paremeters (default port is 8000)
+- `.onTaskResult(callback)`: add an action when a result is given by a worker. Callback will receive 2 parameters: (result, clientIdentifier)
+- `.onTaskEnded(callback)`: add an action when a task is ended by a worker. Callback will receive 2 parameters: (data, clientIdentifier)
+- `.onTaskEvent(eventName, callback)`: add an action when a specific event is sent by a worker. Callback will receive 2 parameters: (data, clientIdentifier)
+
+- `.addTaskParameter(parameterKey, defaultValue)`: add a parameter that will be sent to all workers at task launch. To set a parameter value at runtime, use the command `parameters` on CLI and follow the instructions.
+- `.addServerAction(name, callback)`: add a method to the server that will be callable by any clients (workers / cli) using server.{methodName}(anyParameters). Callback can have any desired parameters
+- `.declareWorkerTask(name)`: declare an custom method on the worker that will be callable by the server.
+
+---
+### Worker (BOT) implementation <a id="worker"></a>
+
+To create a worker doing a task simply do:
 ~~~~javascript
 const Netbotify = require("netbotify");
 
+//OPTIONAL: create an identity of the worker (group name and instance id)
+let identifier = new Netbotify.ClientIdentifier("group1", "instance1");
+
 // Create a worker
 let worker = new Netbotify.Worker({
-    uri: "http://localhost:8000/", // Server uri to connect to
-    autoConnect: false // Auto-connect to server (default: true)
+    uri: "http://localhost:8000/", // Server uri to connect to,
+    identifier: identifier //Pass a custom identifier
 });
 
 // Add task content on launch
@@ -47,19 +73,34 @@ worker.onLaunchTask((parameters, server) => {
     //Parameters contains all parameters defined by the CLI when the task is launched
     console.log("Parameter 'id': ", parameters.id.value); // Should have defaultValue "12345678"
     console.log("Task is launched by the server");
-
+    
+    //Do your stuff
 });
 
 // Add task content on stop
 worker.onStopTask((server) => {
     console.log("Task is stopped by the server");
-
+    
+    //Stop your things
 });
-
-worker.connect(); // In case of autoConnect: false
 ~~~~
 
-#### Remote CLI implementation
+#### OPTIONAL bot parameters
+- `autoConnect`: if autoConnect is set to false, connect manually to the server with .connect()
+- `identifier`: give a custom identifier to the worker
+
+#### Bot extra methods
+- `.connect()`: if autoConnect is set to false, connect manually to the server
+- `.onLaunchTask(callback)`: add an action on launching the task by the server
+- `.onStopTask(callback)`: add an action on stopping the task by the server
+- `.sendTaskResult(result)`: send the task result the server
+- `.sendTaskEnd(data)`: send that the task has ended (with custom data)
+- `.sendTaskEvent(eventName, data)`: send a custom event to the server
+
+---
+### Remote CLI implementation <a id="cli"></a>
+
+The server is controllable by a remote shell that can be created with:
 ~~~~javascript
 const Netbotify = require("netbotify");
 
@@ -67,7 +108,6 @@ const Netbotify = require("netbotify");
 let cli = new Netbotify.RemoteCLI({
     uri: "http://localhost:8000/", // Server uri to connect to
     delimiter: "myApp", // CLI shell prefix
-    autoConnect: false // Auto-connect to server (default: true)
 });
 
 //Add a custom command
@@ -77,22 +117,38 @@ cli.addCommand("commandName", "Command description", (args, callback) => {
     
     callback(); //Mandatory command return callback
 });
-
-cli.connect(); // In case of autoConnect: false
 ~~~~
 
-##### CLI Default commands
+#### OPTIONAL CLI parameters
+- `autoConnect`: if autoConnect is set to false, connect manually to the server with .connect()
+- `delimiter`: set a custom prefix for the shell
+- `autoSubscribe`: subscribe automatically the the server events (taks results, task ends) when the server is connected
+- `identifier`: give a custom identifier to the cli
+- 
+#### CLI extra methods
+- `.connect()`: if autoConnect is set to false, connect manually to the server
+- `.addCommand(commandWord, commandDescription, callback)`: add an shell command to the CLI defined be the commandWord. Callback will receive 2 parameters: (args, endCommand): the arguments passed to the command and a callback to execute at the end of the command.
+
+#### CLI Default commands
 - `parameters`: get the list of connected workers on the server
     - Options:
         - `-r, --reload`: erase and reload the current parameters from the server
         - `-s, --save`: save parameters value on the server now
-- `workers`: get the list of connected workers on the server
-- `clis`: get the list of connected CLIs on the server
-- `launch`: start all the tasks on the connected workers
+- `subscribe`: subscribe to the server (implicitly worker) events
+- `unsubscribe`: unubscribe to the server (implicitly worker) events
+- `workers [clientId]`: get the list of connected workers on the server
     - Options:
+        - `[clientId]`: set a specific worker's clientId to get
+- `clis [clientId]`: get the list of connected CLIs on the server
+    - Options:
+        - `[clientId]`: set a specific cli's clientId to get
+- `launch [clientId]`: start all the tasks on the connected workers
+    - Options:
+        - `[clientId]`: set a specific worker's clientId to launch   
         - `-f, --force`: force sending start even if it's already launched
-- `stop`: stop all the tasks on the connected workers
+- `stop [clientId]`: stop all the tasks on the connected workers
     - Options:
+        - `[clientId]`: set a specific worker's clientId to stop 
         - `-f, --force`: force sending stop even if it's already stopped
 
 ## Referencies
