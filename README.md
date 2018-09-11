@@ -22,6 +22,7 @@ Dynamic parameters can be defined at launch time.
 - [Worker (bot) usage](#worker)
 - [Remote CLI usage](#cli)
 
+---
 ### Server implementation <a id="server"></a>
 
 A server can easily be created with:
@@ -51,7 +52,7 @@ server.connect();
 - `.addServerAction(name, callback)`: add a method to the server that will be callable by any clients (workers / cli) using server.{methodName}(anyParameters). Callback can have any desired parameters
 - `.declareWorkerTask(name)`: declare an custom method on the worker that will be callable by the server.
 
-
+---
 ### Worker (BOT) implementation <a id="worker"></a>
 
 To create a worker doing a task simply do:
@@ -96,7 +97,7 @@ worker.onStopTask((server) => {
 - `.sendTaskEnd(data)`: send that the task has ended (with custom data)
 - `.sendTaskEvent(eventName, data)`: send a custom event to the server
 
-
+---
 ### Remote CLI implementation <a id="cli"></a>
 
 The server is controllable by a remote shell that can be created with:
