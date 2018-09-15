@@ -40,4 +40,11 @@ export declare class Worker extends Client {
      * @param data
      */
     sendTaskEnded(data?: any): void;
+    /**
+     * Send file buffer to the server
+     * @param {string} fileName
+     * @param {string} extension
+     * @param {string} buffer
+     */
+    sendB64Image(fileName: string, extension: string, buffer: string): void;
 }
