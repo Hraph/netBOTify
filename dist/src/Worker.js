@@ -125,6 +125,16 @@ class Worker extends Client_1.Client {
             this.server.task.taskEnded(data);
         this.identifier.taskStatus = ClientIdentifier_1.TaskStatus.Idle;
     }
+    /**
+     * Send file buffer to the server
+     * @param {string} fileName
+     * @param {string} extension
+     * @param {string} buffer
+     */
+    sendB64Image(fileName, extension, buffer) {
+        if (this.server !== null)
+            this.server.task.b64Image(fileName, extension, buffer);
+    }
 }
 exports.Worker = Worker;
 //# sourceMappingURL=Worker.js.map

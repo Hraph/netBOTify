@@ -95,7 +95,6 @@ export class Worker extends Client {
             //this.serverProxy is injected by eureca
             //TODO: implement
             __this.taskEvent.emit("statusTask", __this.server);
-            
         };
     }
 
@@ -151,4 +150,15 @@ export class Worker extends Client {
             this.server.task.taskEnded(data);
         this.identifier.taskStatus = TaskStatus.Idle;
     }
+    
+    /**
+     * Send file buffer to the server
+     * @param {string} fileName
+     * @param {string} extension
+     * @param {string} buffer
+     */
+     public sendB64Image(fileName: string, extension: string, buffer: string){
+         if (this.server !== null)
+            this.server.task.b64Image(fileName, extension, buffer);
+     }
 }

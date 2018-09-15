@@ -45,6 +45,15 @@ export declare class Server {
      */
     private _saveWorkerResult;
     /**
+     * Save the worker base64 encoded image
+     * @param {ClientIdentifier} client
+     * @param {string} fileName
+     * @param {string} extension
+     * @param {string} buffer
+     * @private
+     */
+    private _saveWorkerB64Image;
+    /**
      * Launch the server
      */
     connect(): void;

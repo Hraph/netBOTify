@@ -176,6 +176,18 @@ export class Server {
                     client.taskStatus = TaskStatus.Idle;
                     __this._saveWorkerLog(client, "taskStatus", "ENDED: " + data); //Save to log
                 });
+            },
+            /**
+             * Save a base64 encoded file from worker
+             * @param {string} fileName
+             * @param {string} extension
+             * @param {string} buffer
+             */
+            b64Image: function(fileName: string, extension: string, buffer: string){
+                __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
+                    __this._saveWorkerB64Image(client, fileName, extension, buffer);
+                    __this._saveWorkerLog(client, "taskStatus", "FILE: " + fileName + "." + extension); //Save to log
+                });
             }
         };
 
@@ -403,6 +415,42 @@ export class Server {
                 fs.appendFile(this.config.resultFilePath, formatedData).catch(processErr);
             }).catch(processErr);
         }
+    }
+    
+    /**
+     * Save the worker base64 encoded image
+     * @param {ClientIdentifier} client
+     * @param {string} fileName
+     * @param {string} extension
+     * @param {string} buffer
+     * @private
+     */
+    private _saveWorkerB64Image(client: ClientIdentifier, fileName: string, extension: string, buffer: string){
+        if (this.saveLogToDirectory && client.clientType == ClientType.Worker){
+            let __this = this; //Keep context
+            
+            let imagePath = path.join(this.config.logDirectoryPath, client.groupId, client.instanceId + "." + client.token + "." + fileName + "." + extension); //Log directory is /{groupId}/{instanceId}.{token}.{fileName}.{extension}
+            
+            function processErr(err: any){
+                logger.server().error('Unable to save image: ', err);
+                __this._sendEventToSubscribedCLIs("saveImageError", "Save image error " + err, client.clientId);
+            }
+            
+            try {
+                if (extension == "png")
+                    buffer = buffer.replace(/^data:image\/png;base64,/,"");
+                else if (extension == "jpg")
+                    buffer = buffer.replace(/^data:image\/jpeg;base64,/,"");
+                
+                //Create directory if not exists and write to file
+                fs.writeFile(imagePath, buffer, 'base64').catch(processErr);
+            }
+            catch(e){
+                processErr(e);
+            }
+        }
+        else
+            logger.server().error('Image not saved: log directory not enabled');
     }
 
     /**
