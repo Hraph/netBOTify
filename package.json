@@ -37,7 +37,7 @@
     "console.table": "^0.10.0",
     "engine.io": "^3.2.0",
     "engine.io-client": "^3.2.1",
-    "eureca.io": "^0.8.2",
+    "eureca.io": "git://github.com:Hraph/eureca.io.git",
     "express": "^4.16.3",
     "fs-extra": "^7.0.0",
     "log4js": "^3.0.5",
