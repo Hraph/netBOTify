@@ -1,6 +1,6 @@
 import {Worker} from '../src';
 import {ClientIdentifier} from '../src';
-import {TaskParameter, TaskParameterList} from "../src/TaskParameter";
+import {TaskParameter, TaskParameterList} from "../src/models/TaskParameter";
 
 let identifier = new ClientIdentifier("group1", "1");
 

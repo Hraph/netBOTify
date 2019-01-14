@@ -1,6 +1,5 @@
-import {ClientIdentifier} from "./ClientIdentifier";
-
-const EurecaClient = require("eureca.io").Client;
+import {ClientIdentifier} from "../models/ClientIdentifier";
+import { Client as EurecaClient } from 'eureca.io';
 
 /** @ignore */
 declare var require: any;
@@ -24,7 +23,7 @@ export class Client {
 
         /**
          * Client initialization
-         * @type {Eureca.Client}
+         * @type {EurecaClient}
          */
         this.client = new EurecaClient({
             uri: (this.config.uri) ? this.config.uri : "http://localhost:8000/",

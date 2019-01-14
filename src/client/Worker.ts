@@ -1,7 +1,7 @@
 import {Client} from "./Client";
-import {TaskStatus} from "./ClientIdentifier";
-import {logger} from "./logger";
-import {TaskParameter, TaskParameterList} from "./TaskParameter";
+import {TaskStatus} from "../models/ClientIdentifier";
+import {logger} from "../logger";
+import {TaskParameter, TaskParameterList} from "../models/TaskParameter";
 
 const EventEmitter = require("events");
 

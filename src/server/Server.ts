@@ -1,8 +1,8 @@
-import {ClientIdentifier, ClientType, TaskStatus} from "./ClientIdentifier";
-import {logger} from "./logger";
-import {TaskParameter, TaskParameterList} from "./TaskParameter";
+import {ClientIdentifier, ClientType, TaskStatus} from "../models/ClientIdentifier";
+import {logger} from "../logger";
+import {TaskParameter, TaskParameterList} from "../models/TaskParameter";
+import { Server as EurecaServer } from 'eureca.io';
 
-const EurecaServer = require("eureca.io").Server;
 const express = require('express')
     , app = express()
     , webServer = require('http').createServer(app)
@@ -38,7 +38,7 @@ export class Server {
 
         /**
          * Server initialization
-         * @type {Eureca.Server}
+         * @type {EurecaServer}
          */
         this.server = new EurecaServer({
             authenticate: function(identifier: ClientIdentifier, next: Function){

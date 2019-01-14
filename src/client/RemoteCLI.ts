@@ -1,7 +1,7 @@
 import {Client} from "./Client";
-import {ClientIdentifier, ClientType, TaskStatus} from "./ClientIdentifier";
-import {logger} from "./logger";
-import {TaskParameter, TaskParameterList} from "./TaskParameter";
+import {ClientIdentifier, ClientType, TaskStatus} from "../models/ClientIdentifier";
+import {logger} from "../logger";
+import {TaskParameter, TaskParameterList} from "../models/TaskParameter";
 
 const EventEmitter = require("events"),
       vorpal = require('vorpal')(),
