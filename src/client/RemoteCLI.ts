@@ -15,14 +15,14 @@ export class RemoteCLI extends Client {
     private taskEvent: any;
     private taskParameters: any = null;
     constructor(config: any = {}){
+        super(config); //Create client
+
+        let __this = this; //Keep context
+
+        this.taskEvent = new EventEmitter();
+        this.identifier.clientType = ClientType.RemoteCLI;
+        
         try {
-            super(config); //Create client
-    
-            let __this = this; //Keep context
-    
-            this.taskEvent = new EventEmitter();
-            this.identifier.clientType = ClientType.RemoteCLI;
-    
             /**
              * Client internal events handling
              */
@@ -220,7 +220,7 @@ export class RemoteCLI extends Client {
                 });
         }
         catch(e) {
-            logger.server().error("Error while constructing cli: " + e);
+            logger.cli().error("Error while constructing cli: " + e);
             process.exit(1);
         }
     }

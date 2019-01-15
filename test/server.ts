@@ -5,7 +5,8 @@ let server = new Server({
     port: 8000,
     logDirectoryPath: path.join(__dirname, '..', '..', 'result'),
     resultFilePath: path.join(__dirname, '..', '..', 'result', 'result.json'),
-    intervalPrintStatus: 60
+    intervalPrintStatus: 60,
+    logger: 'info'
 });
 
 server.addTaskParameter("id", "12345678");

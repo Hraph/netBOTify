@@ -11,11 +11,11 @@ declare var require: any;
 export class Worker extends Client {
     private taskEvent: any;
     constructor(config: any = {}){
+        super(config); //Create client
+    
+        this.taskEvent = new EventEmitter();
+        
         try {
-            super(config); //Create client
-    
-            this.taskEvent = new EventEmitter();
-    
             this.client.ready((serverProxy: any) => { //Triggered ONCE when first time authenticated
                 logger.worker().info('Connected to server');
             });

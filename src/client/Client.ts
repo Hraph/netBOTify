@@ -1,4 +1,5 @@
 import {ClientIdentifier} from "../models/ClientIdentifier";
+import {logger} from "../logger";
 import { Client as EurecaClient } from 'eureca.io';
 
 /** @ignore */
@@ -20,38 +21,44 @@ export class Client {
 
         //Default identifier
         this.identifier = config.identifier ? config.identifier : new ClientIdentifier("defaultGroup", "defaultInstance");
-
-        /**
-         * Client initialization
-         * @type {EurecaClient}
-         */
-        this.client = new EurecaClient({
-            uri: (this.config.uri) ? this.config.uri : "http://localhost:8000/",
-            prefix: "nbfy",
-            autoConnect: (this.config.autoConnect) ? this.config.autoConnect : true,
-        });
-
-        /**
-         * Client internal events handling
-         */
-        this.client.ready((serverProxy: any) => { //Triggered when authenticated
-            this.server = serverProxy;
-            this.launchPing(serverProxy);
-        });
-
-        this.client.onConnect((client: any) => {
-            if (this.client.isReady()) //Client was already connected but is now reconnecting : increment reconnect count
-                ++this.identifier.reconnect;
-            
-            this.client.authenticate(this.identifier); //Authenticate when connect
-
-            if (this.client.isReady()) //Client was already connected but is now reconnecting : now relaunch ping while it's authenticated
-                this.launchPing(client._proxy);
-        });
-
-        this.client.onDisconnect((socket: any) => {
-            this.stopPing();
-        });
+    
+        try {
+            /**
+             * Client initialization
+             * @type {EurecaClient}
+             */
+            this.client = new EurecaClient({
+                uri: (this.config.uri) ? this.config.uri : "http://localhost:8000/",
+                prefix: "nbfy",
+                autoConnect: (this.config.autoConnect) ? this.config.autoConnect : true,
+            });
+    
+            /**
+             * Client internal events handling
+             */
+            this.client.ready((serverProxy: any) => { //Triggered when authenticated
+                this.server = serverProxy;
+                this.launchPing(serverProxy);
+            });
+    
+            this.client.onConnect((client: any) => {
+                if (this.client.isReady()) //Client was already connected but is now reconnecting : increment reconnect count
+                    ++this.identifier.reconnect;
+                
+                this.client.authenticate(this.identifier); //Authenticate when connect
+    
+                if (this.client.isReady()) //Client was already connected but is now reconnecting : now relaunch ping while it's authenticated
+                    this.launchPing(client._proxy);
+            });
+    
+            this.client.onDisconnect((socket: any) => {
+                this.stopPing();
+            });
+        }
+        catch(e) {
+            logger.error("Error while constructing client: " + e);
+            process.exit(1);
+        }
     }
 
     /**

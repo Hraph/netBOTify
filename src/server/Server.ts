@@ -1,6 +1,7 @@
 import {ClientIdentifier, ClientType, TaskStatus} from "../models/ClientIdentifier";
 import {logger} from "../logger";
 import {TaskParameter, TaskParameterList} from "../models/TaskParameter";
+import {ServerConfig} from "../models/ServerConfig";
 import {ServerStatus} from './ServerStatus';
 import { Server as EurecaServer } from 'eureca.io';
 
@@ -18,7 +19,7 @@ declare var require: any;
 
 export class Server {
     public clients: ClientIdentifier[] = [];
-    private config: any = {};
+    private config: ServerConfig = {};
     private server: any;
     private taskParameters: TaskParameterList = {}; //Save the parameters for the next task launch
     private serverEvent: any;
@@ -26,11 +27,17 @@ export class Server {
     private saveLogToDirectory: boolean = false;
     private saveResultToFile: boolean = false;
 
-    constructor(config: any = {}){
+    constructor(config: ServerConfig = {}){
         try {
             this.config = config;
             let __this = this; //Keep context
             this.serverEvent = new EventEmitter();
+            
+            /**
+             * Set logger config
+             */
+            if (config.logger)
+                logger.setServerLevel(config.logger);
     
             /**
              * Process config

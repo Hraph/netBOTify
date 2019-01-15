@@ -3,13 +3,15 @@ const log4js = require("log4js");
 /** @ignore */
 declare var require: any;
 
-/**
- * Configuration
- */
-log4js.configure({
+let configuration: any = {
     appenders: { out: { type: 'stdout', layout: { type: 'colored' } } },
     categories: { default: { appenders: [ 'out' ], level: 'debug' } }
-});
+}
+
+/**
+ * Initial Configuration
+ */
+log4js.configure(configuration);
 
 
 /**
@@ -21,6 +23,14 @@ log4js.server = () => {
 };
 
 /**
+ * Set the minimum logger level for Server
+ */
+log4js.setServerLevel = (level: string) => {
+    configuration.categories["[SERVER]"] = { appenders: [ 'out' ], level: level }; // Set config
+    log4js.configure(configuration); // Apply config
+}
+
+/**
  * Custom logger layout for worker
  * @returns {Logger}
  */
@@ -29,12 +39,28 @@ log4js.worker = () => {
 };
 
 /**
+ * Set the minimum logger level for Worker
+ */
+log4js.setWorkerLevel = (level: string) => {
+    configuration.categories["[WORKER]"] = { appenders: [ 'out' ], level: level }; // Set config
+    log4js.configure(configuration); // Apply config
+}
+
+/**
  * Custom logger layout for CLI
  * @returns {Logger}
  */
 log4js.cli = () => {
     return log4js.getLogger("[CLI]");
 };
+
+/**
+ * Set the minimum logger level for CLI
+ */
+log4js.setCliLevel = (level: string) => {
+    configuration.categories["[CLI]"] = { appenders: [ 'out' ], level: level }; // Set config
+    log4js.configure(configuration); // Apply config
+}
 
 /**
  * Default logger print functions for default layout

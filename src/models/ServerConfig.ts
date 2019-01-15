@@ -1,6 +1,7 @@
 export interface ServerConfig {
-    port?: string,
+    port?: number,
     logDirectoryPath?: string,
     resultFilePath?: string,
-    intervalPrintStatus?: number
+    intervalPrintStatus?: number,
+    logger?: string
 }
