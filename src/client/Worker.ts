@@ -1,7 +1,7 @@
 import {Client} from "./Client";
 import {TaskStatus} from "../models/ClientIdentifier";
 import {logger} from "../logger";
-import {TaskParameter, TaskParameterList} from "../models/TaskParameter";
+import {GlobalParameter, GlobalParameterList} from "../models/GlobalParameter";
 import {WorkerConfig} from "../models/WorkerConfig";
 
 const EventEmitter = require("events");
@@ -76,9 +76,9 @@ export class Worker extends Client {
     private _internalActions(__this: Worker){
         /**
          * Action on task launch from the server
-         * @param {TaskParameterList} parameters
+         * @param {GlobalParameterList} parameters
          */
-        this.client.exports.launchTask = function(parameters: TaskParameterList) {
+        this.client.exports.launchTask = function(parameters: GlobalParameterList) {
             //this.serverProxy is injected by eureca
             
             __this.taskEvent.emit("launchTask", parameters, __this.server);
@@ -113,9 +113,9 @@ export class Worker extends Client {
 
     /**
      * Add handler on task launch request event
-     * @param {(parameters: TaskParameterList, server: any) => void} callback
+     * @param {(parameters: GlobalParameterList, server: any) => void} callback
      */
-    public onLaunchTask(callback: (parameters: TaskParameterList, server: any) => void){
+    public onLaunchTask(callback: (parameters: GlobalParameterList, server: any) => void){
         this.taskEvent.on("launchTask", callback);
     }
 

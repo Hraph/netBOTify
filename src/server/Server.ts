@@ -1,6 +1,6 @@
 import {ClientIdentifier, ClientType, TaskStatus} from "../models/ClientIdentifier";
 import {logger} from "../logger";
-import {TaskParameter, TaskParameterList} from "../models/TaskParameter";
+import {GlobalParameter, GlobalParameterList} from "../models/GlobalParameter";
 import {ServerConfig} from "../models/ServerConfig";
 import {ServerStatus} from './ServerStatus';
 import { Server as EurecaServer } from 'eureca.io';
@@ -21,7 +21,7 @@ export class Server {
     public clients: ClientIdentifier[] = [];
     private config: ServerConfig = {};
     private server: any;
-    private taskParameters: TaskParameterList = {}; //Save the parameters for the next task launch
+    private globalParameters: GlobalParameterList = {}; //Save the parameters for the next task launch
     private serverEvent: any;
     private subscribedCLISToEvents: string[] = []; //Save the list of subscribed CLI
     private saveLogToDirectory: boolean = false;
@@ -163,14 +163,14 @@ export class Server {
              */
             taskResult: function(result: any) {
                 __this.serverEvent.emit("taskResult", result, this.clientProxy);
-                
+
                 //Send to clis
                 __this._sendEventToSubscribedCLIs("taskResult", result, this.user.clientId); //Send task event to subscribed CLIS
-                
+
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
                     __this._saveWorkerResult(client, result); //Save to log
                 });
-                
+
             },
             /**
              * Action when a custom event is emitted from a worker task
@@ -179,8 +179,8 @@ export class Server {
              * @param data
              */
             taskEvent: function(eventName: string, data: any = null){
-                __this.serverEvent.emit("taskEvent:" + eventName, data);  
-                
+                __this.serverEvent.emit("taskEvent:" + eventName, data);
+
                 //Save to log
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
                     __this._saveWorkerLog(client, eventName, data);
@@ -192,7 +192,7 @@ export class Server {
              */
             taskEnded: function(data: any) {
                 __this.serverEvent.emit("taskEnded", data, this.clientProxy); //TODO pass the client identifier
-                
+
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
                     client.taskStatus = TaskStatus.Idle;
                     __this._saveWorkerLog(client, "taskStatus", "ENDED: " + data); //Save to log
@@ -269,45 +269,45 @@ export class Server {
                 });
             },
             /**
-             * Get the list of registered task parameters
-             * @returns {TaskParameterList}
+             * Get the list of registered global parameters for all workers
+             * @returns {GlobalParameterList}
              */
-            getParameters: function() {
-                return __this.taskParameters;
+            getGlobalParameters: function() {
+                return __this.globalParameters;
             },
             /**
              * Save the edited parameters values from CLI in local
-             * @param {TaskParameterList} parameters
+             * @param {GlobalParameterList} parameters
              */
-            saveParameters: function(parameters: TaskParameterList = {}) {
+            saveGlobalParameters: function(parameters: GlobalParameterList = {}) {
                 __this._saveTaskParameters(parameters); //Save parameters
             },
             /**
              * Launch a task on all workers or specified workers' client id
-             * @param {TaskParameterList} parameters
+             * @param {GlobalParameterList} parameters
              * @param clientId
              * @param {boolean} forceLaunch: Launch task even if the task status is already launched
              */
-            launchTask: function (parameters: TaskParameterList = {}, clientId: any = null, forceLaunch: boolean = false) {
+            launchTask: function (parameters: GlobalParameterList = {}, clientId: any = null, forceLaunch: boolean = false) {
                 let clientPromises: any[] = [];
                 let context = this;
                 context.async = true; //Define an asynchronous return
-                
+
                 __this._saveTaskParameters(parameters); //Save parameters
-                
+
                 let total = 0;
-                
+
                 __this.clients.filter(client => {
                         //Custom filter if clientId parameter is set
                         return (clientId !== null) ? (client.clientType == ClientType.Worker && client.clientId.startsWith(clientId)) : (client.clientType == ClientType.Worker);
                     }).forEach(client => { // Get Workers clients ONLY
                         if (forceLaunch || client.taskStatus != TaskStatus.Running) { // Launch task only if task is not currently running
-                            clientPromises.push(__this.server.getClient(client.clientId).launchTask(__this.taskParameters)); //Launch task
+                            clientPromises.push(__this.server.getClient(client.clientId).launchTask(__this.globalParameters)); //Launch task
                     }
-                    
+
                     ++total;
                 });
-                
+
                 Promise.all(clientPromises).catch((e: any) => { //Wait all launches to finish
                     logger.server().error("Unable to launch task ", e);
                     //TODO Send error to CLI
@@ -327,9 +327,9 @@ export class Server {
                 let clientPromises: any[] = [];
                 let context = this;
                 context.async = true; //Define an asynchronous return
-                
+
                 let total = 0;
-                
+
                 __this.clients.filter(client => {
                         //Custom filter if clientId parameter is set
                         return (clientId !== null) ? (client.clientType == ClientType.Worker && client.clientId.startsWith(clientId)) : (client.clientType == ClientType.Worker);
@@ -337,10 +337,10 @@ export class Server {
                         if (forceStop || client.taskStatus != TaskStatus.Idle) { // Stop task only if task is not currently stopped
                             clientPromises.push(__this.server.getClient(client.clientId).stopTask()); //Stop task
                     }
-                    
+
                     ++total;
                 });
-                
+
                 Promise.all(clientPromises).catch((e: any) => { //Wait all stops to finish
                     logger.server().error("Unable to stop task ", e);
                     //TODO Send error to CLI
@@ -370,17 +370,17 @@ export class Server {
 
     /**
      * Save the parameters for the next launch
-     * @param {TaskParameterList} parameters
+     * @param {GlobalParameterList} parameters
      * @private
      */
-    private _saveTaskParameters(parameters: TaskParameterList = {}){
+    private _saveTaskParameters(parameters: GlobalParameterList = {}){
         //Treat input parameters
         if (Object.keys(parameters).length !== 0) {
             for (let parameterKey in parameters) {
                 let parameter = parameters[parameterKey];
                 
-                if (this.taskParameters.hasOwnProperty(parameter.key)) {
-                    this.taskParameters[parameter.key] = parameter; //Update the local parameter
+                if (this.globalParameters.hasOwnProperty(parameter.key)) {
+                    this.globalParameters[parameter.key] = parameter; //Update the local parameter
                 }
             };
         }
@@ -515,7 +515,7 @@ export class Server {
      * @param value: Initial value
      */
     public addTaskParameter(key: string, defaultValue: any, value: any = null){
-        this.taskParameters[key] = (new TaskParameter(key, defaultValue, value));
+        this.globalParameters[key] = (new GlobalParameter(key, defaultValue, value));
     }
 
     /**

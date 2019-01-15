@@ -1,7 +1,7 @@
 import {Client} from "./Client";
 import {ClientIdentifier, ClientType, TaskStatus} from "../models/ClientIdentifier";
 import {logger} from "../logger";
-import {TaskParameter, TaskParameterList} from "../models/TaskParameter";
+import {GlobalParameter, GlobalParameterList} from "../models/GlobalParameter";
 import {RemoteCLIConfig} from "../models/RemoteCLIConfig";
 
 const EventEmitter = require("events"),
@@ -14,7 +14,7 @@ declare var require: any;
 
 export class RemoteCLI extends Client {
     private taskEvent: any;
-    private taskParameters: any = null;
+    private globalParameters: any = null;
     constructor(config: RemoteCLIConfig = {}){
         super(config); //Create client
 
@@ -110,8 +110,8 @@ export class RemoteCLI extends Client {
                     let setParametersCommandPromise = [];
                     
                     //Parameters has not been retrieved before: SET UP PARAMETERS
-                    if (__this.taskParameters == null) {
-                        vorpal.log("Parameters has not been set!");
+                    if (__this.globalParameters == null) {
+                        vorpal.log("Some global parameters has not been set!");
                         vorpal.log("----------------------------");
                         
                         // @ts-ignore: TS2683 'this' implicitly has type 'any' because it does not have a type annotation.
@@ -120,7 +120,7 @@ export class RemoteCLI extends Client {
                     
                     //Parameters has been set
                     Promise.all(setParametersCommandPromise).then(() => {
-                        __this._executeDistantCommand("launchTask", __this.taskParameters, args.clientId, args.options.force)  //Execute task with parameters
+                        __this._executeDistantCommand("launchTask", __this.globalParameters, args.clientId, args.options.force)  //Execute task with parameters
                             .catch(__this._serverInvalidCommandError)
                             .then((result: any) => {
                                 vorpal.log("%d worker's task launched of %d worker%s", result.success, result.total, (result.total >= 2) ? "s" : "");
@@ -156,7 +156,7 @@ export class RemoteCLI extends Client {
                     // @ts-ignore: TS2683 'this' implicitly has type 'any' because it does not have a type annotation.
                     __this._setupTaskParameters(this, args.options.reload).then(() => {
                         if (args.options.save) {
-                            __this._executeDistantCommand("saveParameters", __this.taskParameters)
+                            __this._executeDistantCommand("saveGlobalParameters", __this.globalParameters)
                                 .catch(__this._serverInvalidCommandError)
                                 .then((result: any) => {
                                     vorpal.log("Parameters saved on the server.");
@@ -233,7 +233,7 @@ export class RemoteCLI extends Client {
     }
 
     /**
-     * Setup the registered parameters
+     * Setup the registered global parameters
      * Retrieve parameters on the server on the first setup
      * @param vorpalCommand: Attach the setup to a vorpal command
      * @param {boolean} reloadAll: Get new parameters from server at every calls
@@ -245,16 +245,16 @@ export class RemoteCLI extends Client {
             let getTaskParametersPromise = []; //Save promises
 
             //Parameters has not been retrieved before or force reload
-            if (this.taskParameters == null || reloadAll) {
+            if (this.globalParameters == null || reloadAll) {
                 vorpal.log("Loading new parameters from server.");
-                getTaskParametersPromise.push(this._getServerTaskParameters());
+                getTaskParametersPromise.push(this._getServerGlobalParameters());
             }
           
             //Wait GetParameters function if request needed  
             Promise.all(getTaskParametersPromise).catch(reject).then(() => { 
                 //Parameters are retrieved: ready to ask values
                 
-                if (this.taskParameters == null || Object.keys(this.taskParameters).length === 0) {
+                if (this.globalParameters == null || Object.keys(this.globalParameters).length === 0) {
                     vorpal.log("No parameters to manage.");
                     vorpal.log("----------------------------");
                     resolve();
@@ -264,8 +264,8 @@ export class RemoteCLI extends Client {
                     let vorpalPrompts: any = [];
                         
                     //Ask value for each parameters
-                    for (let parameterKey in this.taskParameters) {
-                        let parameter = this.taskParameters[parameterKey];
+                    for (let parameterKey in this.globalParameters) {
+                        let parameter = this.globalParameters[parameterKey];
                         
                         vorpalPrompts.push({
                             type: "input",
@@ -276,15 +276,15 @@ export class RemoteCLI extends Client {
                     
                     vorpal.log("----------------------------");
 
-                    vorpal.log("Configuring " + Object.keys(this.taskParameters).length + " parameter(s):");
+                    vorpal.log("Configuring " + Object.keys(this.globalParameters).length + " parameter(s):");
                     
                     vorpalCommand.prompt(vorpalPrompts).then((answers: any) => {
                         vorpal.log("----------------------------");
                         
                         //Update parameters value
                         for (let answerKey in answers) {
-                            if (this.taskParameters.hasOwnProperty(answerKey) && answers[answerKey] !== "") //Parameter exist and not empty parameter
-                                this.taskParameters[answerKey].value = answers[answerKey];
+                            if (this.globalParameters.hasOwnProperty(answerKey) && answers[answerKey] !== "") //Parameter exist and not empty parameter
+                                this.globalParameters[answerKey].value = answers[answerKey];
                         }
                         
                         resolve();
@@ -300,10 +300,10 @@ export class RemoteCLI extends Client {
      * @returns {Promise<any>}
      * @private
      */
-    private _getServerTaskParameters(){
+    private _getServerGlobalParameters(){
         return new Promise((resolve, reject) => {
-            this.server.cli["getParameters"]().then((parameters: TaskParameterList) => {
-                this.taskParameters = parameters;
+            this.server.cli["getGlobalParameters"]().then((parameters: GlobalParameterList) => {
+                this.globalParameters = parameters;
                 resolve();
             }).catch(reject);
         })

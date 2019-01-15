@@ -1,9 +1,9 @@
-export class TaskParameter {
+export class GlobalParameter<T> {
     public key: string;
-    public value: any = null;
-    public defaultValue: any = null;
+    public value?: T;
+    public defaultValue?: T;
     public message: string;
-    constructor(key: string, defaultValue: any, value: any = null){
+    constructor(key: string, defaultValue: T, value: any = null){
         this.key = key;
         this.defaultValue = defaultValue;
         if (value == null)
@@ -14,6 +14,6 @@ export class TaskParameter {
     }
 }
 
-export interface TaskParameterList {
-    [key: string]: TaskParameter
+export interface GlobalParameterList {
+    [key: string]: GlobalParameter<any>
 }
