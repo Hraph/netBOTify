@@ -4,7 +4,8 @@ import * as path from 'path';
 let server = new Server({
     port: 8000,
     logDirectoryPath: path.join(__dirname, '..', '..', 'result'),
-    resultFilePath: path.join(__dirname, '..', '..', 'result', 'result.json')
+    resultFilePath: path.join(__dirname, '..', '..', 'result', 'result.json'),
+    intervalPrintStatus: 60
 });
 
 server.addTaskParameter("id", "12345678");

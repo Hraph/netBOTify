@@ -1,6 +1,7 @@
 import {ClientIdentifier, ClientType, TaskStatus} from "../models/ClientIdentifier";
 import {logger} from "../logger";
 import {TaskParameter, TaskParameterList} from "../models/TaskParameter";
+import {ServerStatus} from './ServerStatus';
 import { Server as EurecaServer } from 'eureca.io';
 
 const express = require('express')
@@ -26,68 +27,81 @@ export class Server {
     private saveResultToFile: boolean = false;
 
     constructor(config: any = {}){
-        this.config = config;
-        let __this = this; //Keep context
-        this.serverEvent = new EventEmitter();
-
-        /**
-         * Process config
-         */
-        this.saveLogToDirectory = (config.logDirectoryPath) ? true : false;
-        this.saveResultToFile = (config.resultFilePath) ? true : false;
-
-        /**
-         * Server initialization
-         * @type {EurecaServer}
-         */
-        this.server = new EurecaServer({
-            authenticate: function(identifier: ClientIdentifier, next: Function){
-                try {
-                    identifier.clientId = this.user.clientId; //Save socket clientId
-                    identifier.ip = this.connection.remoteAddress.ip;//Save client ip
-                }
-                catch (e){
-                    logger.server().error("Unable to get client info ", e);
-                }
-
-                __this.clients.push(identifier);
-                
-                //Save connect log
-                if (identifier.clientId != null && identifier.token != null && identifier.clientType == ClientType.Worker)
-                    __this._saveWorkerLog(identifier, "workerStatus", "CONNECTED"); //Save to log
-                
-                next();
-            },
-            prefix: "nbfy",
-            allow: ["launchTask", "stopTask", "statusTask", "CLIOnEvent"]
-        });
-        this.server.attach(webServer);
-
-        /**
-         * Server internal events handling
-         */
-        this.server.on("unhandledMessage", function (msg: any) {
-            logger.server().debug('Received message: ', msg);
-        });
-
-        this.server.onConnect(function(connection: any) {
-           logger.server().debug('Client %s connected', connection.id);
-        });
-
-        this.server.onDisconnect(function (connection: any) {
-            __this.clients.filter(client => client.clientId == connection.id && client.clientType == ClientType.Worker).forEach(client => {
-                __this._saveWorkerLog(client, "workerStatus", "DISCONNECTED"); //Save to log
+        try {
+            this.config = config;
+            let __this = this; //Keep context
+            this.serverEvent = new EventEmitter();
+    
+            /**
+             * Process config
+             */
+            this.saveLogToDirectory = (config.logDirectoryPath) ? true : false;
+            this.saveResultToFile = (config.resultFilePath) ? true : false;
+    
+            /**
+             * Server initialization
+             * @type {EurecaServer}
+             */
+            this.server = new EurecaServer({
+                authenticate: function(identifier: ClientIdentifier, next: Function){
+                    try {
+                        identifier.clientId = this.user.clientId; //Save socket clientId
+                        identifier.ip = this.connection.remoteAddress.ip;//Save client ip
+                    }
+                    catch (e){
+                        logger.server().error("Unable to get client info ", e);
+                    }
+    
+                    __this.clients.push(identifier);
+                    
+                    //Save connect log
+                    if (identifier.clientId != null && identifier.token != null && identifier.clientType == ClientType.Worker)
+                        __this._saveWorkerLog(identifier, "workerStatus", "CONNECTED"); //Save to log
+                    
+                    next();
+                },
+                prefix: "nbfy",
+                allow: ["launchTask", "stopTask", "statusTask", "CLIOnEvent"]
             });
-            
-            __this.clients = __this.clients.filter(client => client.clientId !== connection.id); //Remove client from clients
-            logger.server().info('Client %s disconnected', connection.id);
-        });
-
-        this.server.onError(function (e: any) {
-            logger.server().error('an error occured', e);
-        });
-
-        this._internalActions(this);
+            this.server.attach(webServer);
+    
+            /**
+             * Server internal events handling
+             */
+            this.server.on("unhandledMessage", function (msg: any) {
+                logger.server().debug('Received message: ', msg);
+            });
+    
+            this.server.onConnect(function(connection: any) {
+               logger.server().debug('Client %s connected', connection.id);
+            });
+    
+            this.server.onDisconnect(function (connection: any) {
+                __this.clients.filter(client => client.clientId == connection.id && client.clientType == ClientType.Worker).forEach(client => {
+                    __this._saveWorkerLog(client, "workerStatus", "DISCONNECTED"); //Save to log
+                });
+                
+                __this.clients = __this.clients.filter(client => client.clientId !== connection.id); //Remove client from clients
+                logger.server().info('Client %s disconnected', connection.id);
+            });
+    
+            this.server.onError(function (e: any) {
+                logger.server().error('an error occured', e);
+            });
+    
+            this._internalActions(this);
+    
+            /**
+             * Print status with interval
+             */
+            if (typeof this.config.intervalPrintStatus != "undefined" && this.config.intervalPrintStatus != 0){
+                setInterval(() => ServerStatus.printServerStatus(this), this.config.intervalPrintStatus * 1000);
+            }
+        }
+        catch(e) {
+            logger.server().error("Error while constructing server: " + e);
+            process.exit(1);
+        }
     }
 
     /**

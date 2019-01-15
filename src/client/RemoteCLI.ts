@@ -15,208 +15,214 @@ export class RemoteCLI extends Client {
     private taskEvent: any;
     private taskParameters: any = null;
     constructor(config: any = {}){
-        super(config); //Create client
-
-        let __this = this; //Keep context
-
-        this.taskEvent = new EventEmitter();
-        this.identifier.clientType = ClientType.RemoteCLI;
-
-        /**
-         * Client internal events handling
-         */
-        this.client.ready((serverProxy: any) => {
-            logger.cli().info("Connected to server");
-
-            //Auto subscribe config
-            if (config.autoSubscribe)
-                vorpal.exec("subscribe");
-                
-            //Launch vorpal
-            vorpal.show();
-        });
-
-        this.client.onConnectionLost(() => {
-            logger.cli().info("Disconnected to server\n");
-            vorpal.hide();
-        });
-
-        this.client.onConnect(() => {
-            if (this.client.isReady()) { //Client was ready but is now reconnecting : relaunch vorpal
-                logger.cli().info("Reconnected to server\n");
-                vorpal.show();
-            }
-        });
-
-        this.client.onError(function (e: any) {
-            if (e.type === "TransportError") {
-                logger.cli().error("Unable to connect to server: code", e.description);
-            }
-            else {
-                logger.cli().error('Unknown error', e);
-            }
-        });
-
-
-        /**
-         * CLI RPC methods registering
-         */
-
-        /**
-         * Process when an event is forwarded from the server to the CLI
-         * @param {string} eventName: The custom event name
-         * @param data: Optional parameters
-         * @param {string} clientId: The client od of the origin worker
-         * @constructor
-         */
-        this.client.exports.CLIOnEvent = function(eventName: string, data: any = null, clientId: string) {
-            logger.cli().info("EVENT %s (%s):", eventName, clientId.substr(0,5), data); //Print the event with a shorten client id
-        }
-
-
-        /**
-         * Vorpal commands definition
-         */
-        if (!this.config.delimiter) this.config.delimiter = "netBOTify"; //Default delimiter
-        vorpal.delimiter(this.config.delimiter + '$');
-
-        /**
-         * Ping command
-         */
-        vorpal
-            .command('ping', 'Ping the server.')
-            .action((args: any, callback: Function) => {
-                __this._executeDistantCommand("ping").then((result: any) => {
-                    vorpal.log(result);
-                    callback();
-                });
-            });
-
-        /**
-         * Launch task command
-         */
-        vorpal
-            .command('launch [clientId]', 'Launch the task on workers.')
-            .option('-f, --force', "Force sending start even if it's already launched")
-            .action(function(args: any, callback: Function) {
-                let setParametersCommandPromise = [];
-                
-                //Parameters has not been retrieved before: SET UP PARAMETERS
-                if (__this.taskParameters == null) {
-                    vorpal.log("Parameters has not been set!");
-                    vorpal.log("----------------------------");
+        try {
+            super(config); //Create client
+    
+            let __this = this; //Keep context
+    
+            this.taskEvent = new EventEmitter();
+            this.identifier.clientType = ClientType.RemoteCLI;
+    
+            /**
+             * Client internal events handling
+             */
+            this.client.ready((serverProxy: any) => {
+                logger.cli().info("Connected to server");
+    
+                //Auto subscribe config
+                if (config.autoSubscribe)
+                    vorpal.exec("subscribe");
                     
-                    // @ts-ignore: TS2683 'this' implicitly has type 'any' because it does not have a type annotation.
-                    setParametersCommandPromise.push(__this._setupTaskParameters(this)); //Relaunch command
+                //Launch vorpal
+                vorpal.show();
+            });
+    
+            this.client.onConnectionLost(() => {
+                logger.cli().info("Disconnected to server\n");
+                vorpal.hide();
+            });
+    
+            this.client.onConnect(() => {
+                if (this.client.isReady()) { //Client was ready but is now reconnecting : relaunch vorpal
+                    logger.cli().info("Reconnected to server\n");
+                    vorpal.show();
                 }
-                
-                //Parameters has been set
-                Promise.all(setParametersCommandPromise).then(() => {
-                    __this._executeDistantCommand("launchTask", __this.taskParameters, args.clientId, args.options.force)  //Execute task with parameters
+            });
+    
+            this.client.onError(function (e: any) {
+                if (e.type === "TransportError") {
+                    logger.cli().error("Unable to connect to server: code", e.description);
+                }
+                else {
+                    logger.cli().error('Unknown error', e);
+                }
+            });
+    
+    
+            /**
+             * CLI RPC methods registering
+             */
+    
+            /**
+             * Process when an event is forwarded from the server to the CLI
+             * @param {string} eventName: The custom event name
+             * @param data: Optional parameters
+             * @param {string} clientId: The client od of the origin worker
+             * @constructor
+             */
+            this.client.exports.CLIOnEvent = function(eventName: string, data: any = null, clientId: string) {
+                logger.cli().info("EVENT %s (%s):", eventName, clientId.substr(0,5), data); //Print the event with a shorten client id
+            }
+    
+    
+            /**
+             * Vorpal commands definition
+             */
+            if (!this.config.delimiter) this.config.delimiter = "netBOTify"; //Default delimiter
+            vorpal.delimiter(this.config.delimiter + '$');
+    
+            /**
+             * Ping command
+             */
+            vorpal
+                .command('ping', 'Ping the server.')
+                .action((args: any, callback: Function) => {
+                    __this._executeDistantCommand("ping").then((result: any) => {
+                        vorpal.log(result);
+                        callback();
+                    });
+                });
+    
+            /**
+             * Launch task command
+             */
+            vorpal
+                .command('launch [clientId]', 'Launch the task on workers.')
+                .option('-f, --force', "Force sending start even if it's already launched")
+                .action(function(args: any, callback: Function) {
+                    let setParametersCommandPromise = [];
+                    
+                    //Parameters has not been retrieved before: SET UP PARAMETERS
+                    if (__this.taskParameters == null) {
+                        vorpal.log("Parameters has not been set!");
+                        vorpal.log("----------------------------");
+                        
+                        // @ts-ignore: TS2683 'this' implicitly has type 'any' because it does not have a type annotation.
+                        setParametersCommandPromise.push(__this._setupTaskParameters(this)); //Relaunch command
+                    }
+                    
+                    //Parameters has been set
+                    Promise.all(setParametersCommandPromise).then(() => {
+                        __this._executeDistantCommand("launchTask", __this.taskParameters, args.clientId, args.options.force)  //Execute task with parameters
+                            .catch(__this._serverInvalidCommandError)
+                            .then((result: any) => {
+                                vorpal.log("%d worker's task launched of %d worker%s", result.success, result.total, (result.total >= 2) ? "s" : "");
+                                callback();
+                            });
+                    });
+                    
+                });
+    
+            /**
+             * Stop task command
+             */
+            vorpal
+                .command('stop [clientId]', 'Stop the task on workers.')
+                .option('-f, --force', "Force sending stop even if it's already stopped")
+                .action((args: any, callback: Function) => {
+                    __this._executeDistantCommand("stopTask", args.clientId, args.options.force)
                         .catch(__this._serverInvalidCommandError)
                         .then((result: any) => {
-                            vorpal.log("%d worker's task launched of %d worker%s", result.success, result.total, (result.total >= 2) ? "s" : "");
+                            vorpal.log("%d worker's task stopped of %d worker%s", result.success, result.total, (result.total >= 2) ? "s" : "");
                             callback();
                         });
                 });
-                
-            });
-
-        /**
-         * Stop task command
-         */
-        vorpal
-            .command('stop [clientId]', 'Stop the task on workers.')
-            .option('-f, --force', "Force sending stop even if it's already stopped")
-            .action((args: any, callback: Function) => {
-                __this._executeDistantCommand("stopTask", args.clientId, args.options.force)
-                    .catch(__this._serverInvalidCommandError)
-                    .then((result: any) => {
-                        vorpal.log("%d worker's task stopped of %d worker%s", result.success, result.total, (result.total >= 2) ? "s" : "");
-                        callback();
+    
+            /**
+             * Parameters setup command
+             */
+            vorpal
+                .command('parameters', 'Manage task parameters.')
+                .option("-r, --reload", "Erase and reload the current parameters from the server.")
+                .option("-s, --save", "Save parameters value on the server now.")
+                .action(function(args: any, callback: Function) {
+                    // @ts-ignore: TS2683 'this' implicitly has type 'any' because it does not have a type annotation.
+                    __this._setupTaskParameters(this, args.options.reload).then(() => {
+                        if (args.options.save) {
+                            __this._executeDistantCommand("saveParameters", __this.taskParameters)
+                                .catch(__this._serverInvalidCommandError)
+                                .then((result: any) => {
+                                    vorpal.log("Parameters saved on the server.");
+                                    callback();
+                                });
+                        }
+                        else
+                            callback();
                     });
-            });
-
-        /**
-         * Parameters setup command
-         */
-        vorpal
-            .command('parameters', 'Manage task parameters.')
-            .option("-r, --reload", "Erase and reload the current parameters from the server.")
-            .option("-s, --save", "Save parameters value on the server now.")
-            .action(function(args: any, callback: Function) {
-                // @ts-ignore: TS2683 'this' implicitly has type 'any' because it does not have a type annotation.
-                __this._setupTaskParameters(this, args.options.reload).then(() => {
-                    if (args.options.save) {
-                        __this._executeDistantCommand("saveParameters", __this.taskParameters)
-                            .catch(__this._serverInvalidCommandError)
-                            .then((result: any) => {
-                                vorpal.log("Parameters saved on the server.");
-                                callback();
-                            });
-                    }
-                    else
-                        callback();
                 });
-            });
-
-        /**
-         * List of connected workers command
-         */
-        vorpal
-            .command('workers [clientId]', 'Get server connected workers.')
-            .action((args: any, callback: Function) => {
-                __this._executeDistantCommand("getWorkers", args.clientId)
-                    .catch(__this._serverInvalidCommandError)
-                    .then((result: any) => {
-                        vorpal.log(result.length + " workers");
-                        vorpal.log(cTable.getTable(result));
-                        callback();
-                    });
-            });
-
-        /**
-         * List of connected CLIs command
-         */
-        vorpal
-            .command('clis [clientId]', 'Get server connected CLIs.')
-            .action((args: any, callback: Function) => {
-                __this._executeDistantCommand("getCLIs", args.clientId)
-                    .catch(__this._serverInvalidCommandError)
-                    .then((result: any) => {
-                        vorpal.log(result.length + " CLIs");
-                        vorpal.log(cTable.getTable(result));
-                        callback();
-                    });
-            });
-
-        /**
-         * Subscribe to the server (implicitly worker) events command
-         */
-        vorpal
-            .command('subscribe', 'Subscribe to server worker events.')
-            .action((args: any, callback: Function) => {
-                __this._executeDistantCommand("subscribe")
-                    .catch(__this._serverInvalidCommandError)
-                    .then((result: any) => {
-                        vorpal.log("Subscribed to server events");
-                        callback();
-                    });
-            });
-
-        /**
-         * Unsubscribe to worker events command
-         */
-        vorpal
-            .command('unsubscribe', 'Unsubscribe to server worker events.')
-            .action((args: any, callback: Function) => {
-                __this._executeDistantCommand("unsubscribe")
-                    .catch(__this._serverInvalidCommandError)
-                    .then((result: any) => {
-                        vorpal.log("Unsubscribed to server events");
-                        callback();
-                    });
-            });
+    
+            /**
+             * List of connected workers command
+             */
+            vorpal
+                .command('workers [clientId]', 'Get server connected workers.')
+                .action((args: any, callback: Function) => {
+                    __this._executeDistantCommand("getWorkers", args.clientId)
+                        .catch(__this._serverInvalidCommandError)
+                        .then((result: any) => {
+                            vorpal.log(result.length + " workers");
+                            vorpal.log(cTable.getTable(result));
+                            callback();
+                        });
+                });
+    
+            /**
+             * List of connected CLIs command
+             */
+            vorpal
+                .command('clis [clientId]', 'Get server connected CLIs.')
+                .action((args: any, callback: Function) => {
+                    __this._executeDistantCommand("getCLIs", args.clientId)
+                        .catch(__this._serverInvalidCommandError)
+                        .then((result: any) => {
+                            vorpal.log(result.length + " CLIs");
+                            vorpal.log(cTable.getTable(result));
+                            callback();
+                        });
+                });
+    
+            /**
+             * Subscribe to the server (implicitly worker) events command
+             */
+            vorpal
+                .command('subscribe', 'Subscribe to server worker events.')
+                .action((args: any, callback: Function) => {
+                    __this._executeDistantCommand("subscribe")
+                        .catch(__this._serverInvalidCommandError)
+                        .then((result: any) => {
+                            vorpal.log("Subscribed to server events");
+                            callback();
+                        });
+                });
+    
+            /**
+             * Unsubscribe to worker events command
+             */
+            vorpal
+                .command('unsubscribe', 'Unsubscribe to server worker events.')
+                .action((args: any, callback: Function) => {
+                    __this._executeDistantCommand("unsubscribe")
+                        .catch(__this._serverInvalidCommandError)
+                        .then((result: any) => {
+                            vorpal.log("Unsubscribed to server events");
+                            callback();
+                        });
+                });
+        }
+        catch(e) {
+            logger.server().error("Error while constructing cli: " + e);
+            process.exit(1);
+        }
     }
 
     /**
