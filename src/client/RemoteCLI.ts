@@ -120,12 +120,25 @@ export class RemoteCLI extends Client {
                     
                     //Parameters has been set
                     Promise.all(setParametersCommandPromise).then(() => {
-                        __this._executeDistantCommand("launchTask", __this.globalParameters, args.clientId, args.options.force)  //Execute task with parameters
-                            .catch(__this._serverInvalidCommandError)
-                            .then((result: any) => {
-                                vorpal.log("%d worker's task launched of %d worker%s", result.success, result.total, (result.total >= 2) ? "s" : "");
+
+                        // Ask for confirmation
+                        //@ts-ignore
+                        return this.prompt({
+                            type: 'confirm',
+                            name: 'continue',
+                            default: false,
+                            message: 'Confirm to launch worker(s)?',
+                        }, (result: any) => {
+                            if (!result.continue) // Abort
                                 callback();
-                            });
+                            else // Confirm
+                                __this._executeDistantCommand("launchTask", __this.globalParameters, args.clientId, args.options.force)  //Execute task with parameters
+                                    .catch(__this._serverInvalidCommandError)
+                                    .then((result: any) => {
+                                        vorpal.log("%d worker's task launched of %d worker%s", result.success, result.total, (result.total >= 2) ? "s" : "");
+                                        callback();
+                                    });
+                        });
                     });
                     
                 });
@@ -136,20 +149,34 @@ export class RemoteCLI extends Client {
             vorpal
                 .command('stop [clientId]', 'Stop the task on workers.')
                 .option('-f, --force', "Force sending stop even if it's already stopped")
-                .action((args: any, callback: Function) => {
-                    __this._executeDistantCommand("stopTask", args.clientId, args.options.force)
-                        .catch(__this._serverInvalidCommandError)
-                        .then((result: any) => {
-                            vorpal.log("%d worker's task stopped of %d worker%s", result.success, result.total, (result.total >= 2) ? "s" : "");
+                .action(function(args: any, callback: Function) {
+
+                    // Ask for confirmation
+                    //@ts-ignore
+                    return this.prompt({
+                        type: 'confirm',
+                        name: 'continue',
+                        default: false,
+                        message: 'Confirm to stop worker(s)?',
+                    }, (result: any) => {
+                        if (!result.continue) // Abort
                             callback();
-                        });
+                        else // Confirm
+                            __this._executeDistantCommand("stopTask", args.clientId, args.options.force)
+                                .catch(__this._serverInvalidCommandError)
+                                .then((result: any) => {
+                                    vorpal.log("%d worker's task stopped of %d worker%s", result.success, result.total, (result.total >= 2) ? "s" : "");
+                                    callback();
+                                });
+                    });
+
                 });
     
             /**
              * Parameters setup command
              */
             vorpal
-                .command('parameters', 'Manage task parameters.')
+                .command('parameters', 'Manage global parameters sent to all workers.')
                 .option("-r, --reload", "Erase and reload the current parameters from the server.")
                 .option("-s, --save", "Save parameters value on the server now.")
                 .action(function(args: any, callback: Function) {
