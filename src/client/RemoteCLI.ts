@@ -2,6 +2,7 @@ import {Client} from "./Client";
 import {ClientIdentifier, ClientType, TaskStatus} from "../models/ClientIdentifier";
 import {logger} from "../logger";
 import {TaskParameter, TaskParameterList} from "../models/TaskParameter";
+import {RemoteCLIConfig} from "../models/RemoteCLIConfig";
 
 const EventEmitter = require("events"),
       vorpal = require('vorpal')(),
@@ -14,7 +15,7 @@ declare var require: any;
 export class RemoteCLI extends Client {
     private taskEvent: any;
     private taskParameters: any = null;
-    constructor(config: any = {}){
+    constructor(config: RemoteCLIConfig = {}){
         super(config); //Create client
 
         let __this = this; //Keep context
@@ -23,6 +24,12 @@ export class RemoteCLI extends Client {
         this.identifier.clientType = ClientType.RemoteCLI;
         
         try {
+            /**
+             * Set logger config
+             */
+            if (config.logger)
+                logger.setCliLevel(config.logger);
+                
             /**
              * Client internal events handling
              */

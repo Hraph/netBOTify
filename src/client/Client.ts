@@ -1,6 +1,7 @@
 import {ClientIdentifier} from "../models/ClientIdentifier";
 import {logger} from "../logger";
 import { Client as EurecaClient } from 'eureca.io';
+import {ClientConfig} from "../models/ClientConfig";
 
 /** @ignore */
 declare var require: any;
@@ -16,7 +17,7 @@ export class Client {
     private pingIntervalSecond: number = 5;
     private pingTimeoutSecond: number = 2;
 
-    protected constructor(config: any = {}){
+    protected constructor(config: ClientConfig = {}){
         this.config = config;
 
         //Default identifier

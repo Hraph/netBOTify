@@ -6,7 +6,8 @@ let identifier = new ClientIdentifier("group1", "1");
 
 let worker = new Worker({
     uri: "http://localhost:8000/",
-    identifier: identifier
+    identifier: identifier,
+    logger: 'debug'
 });
 
 worker.onLaunchTask((parameters: TaskParameterList, server: any) => {

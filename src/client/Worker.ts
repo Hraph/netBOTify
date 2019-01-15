@@ -2,6 +2,7 @@ import {Client} from "./Client";
 import {TaskStatus} from "../models/ClientIdentifier";
 import {logger} from "../logger";
 import {TaskParameter, TaskParameterList} from "../models/TaskParameter";
+import {WorkerConfig} from "../models/WorkerConfig";
 
 const EventEmitter = require("events");
 
@@ -10,19 +11,25 @@ declare var require: any;
 
 export class Worker extends Client {
     private taskEvent: any;
-    constructor(config: any = {}){
+    constructor(config: WorkerConfig = {}){
         super(config); //Create client
     
         this.taskEvent = new EventEmitter();
         
         try {
-            this.client.ready((serverProxy: any) => { //Triggered ONCE when first time authenticated
-                logger.worker().info('Connected to server');
-            });
+            /**
+             * Set logger config
+             */
+            if (config.logger)
+                logger.setWorkerLevel(config.logger);
     
             /**
              * Client internal events handling
              */
+             this.client.ready((serverProxy: any) => { //Triggered ONCE when first time authenticated
+                logger.worker().info('Connected to server');
+            });
+            
             this.client.onConnect((client: any) => {
                 if (this.client.isReady()) //Client reconnected
                     logger.worker().info('Reconnected to server');
