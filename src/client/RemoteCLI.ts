@@ -133,11 +133,11 @@ export class RemoteCLI extends Client {
                                 callback();
                             else // Confirm
                                 __this._executeDistantCommand("launchTask", __this.globalParameters, args.clientId, args.options.force)  //Execute task with parameters
-                                    .catch(__this._serverInvalidCommandError)
                                     .then((result: any) => {
                                         vorpal.log("%d worker's task launched of %d worker%s", result.success, result.total, (result.total >= 2) ? "s" : "");
                                         callback();
-                                    });
+                                    })
+                                    .catch(__this._serverInvalidCommandError);
                         });
                     });
                     
@@ -163,11 +163,11 @@ export class RemoteCLI extends Client {
                             callback();
                         else // Confirm
                             __this._executeDistantCommand("stopTask", args.clientId, args.options.force)
-                                .catch(__this._serverInvalidCommandError)
                                 .then((result: any) => {
                                     vorpal.log("%d worker's task stopped of %d worker%s", result.success, result.total, (result.total >= 2) ? "s" : "");
                                     callback();
-                                });
+                                })
+                                .catch(__this._serverInvalidCommandError);
                     });
 
                 });
@@ -184,11 +184,11 @@ export class RemoteCLI extends Client {
                     __this._setupTaskParameters(this, args.options.reload).then(() => {
                         if (args.options.save) {
                             __this._executeDistantCommand("saveGlobalParameters", __this.globalParameters)
-                                .catch(__this._serverInvalidCommandError)
                                 .then((result: any) => {
                                     vorpal.log("Parameters saved on the server.");
                                     callback();
-                                });
+                                })
+                                .catch(__this._serverInvalidCommandError);
                         }
                         else
                             callback();
@@ -202,12 +202,12 @@ export class RemoteCLI extends Client {
                 .command('workers [clientId]', 'Get server connected workers.')
                 .action((args: any, callback: Function) => {
                     __this._executeDistantCommand("getWorkers", args.clientId)
-                        .catch(__this._serverInvalidCommandError)
                         .then((result: any) => {
                             vorpal.log(result.length + " workers");
                             vorpal.log(cTable.getTable(result));
                             callback();
-                        });
+                        })
+                        .catch(__this._serverInvalidCommandError);
                 });
     
             /**
@@ -217,12 +217,12 @@ export class RemoteCLI extends Client {
                 .command('clis [clientId]', 'Get server connected CLIs.')
                 .action((args: any, callback: Function) => {
                     __this._executeDistantCommand("getCLIs", args.clientId)
-                        .catch(__this._serverInvalidCommandError)
                         .then((result: any) => {
                             vorpal.log(result.length + " CLIs");
                             vorpal.log(cTable.getTable(result));
                             callback();
-                        });
+                        })
+                        .catch(__this._serverInvalidCommandError);
                 });
     
             /**
@@ -232,11 +232,11 @@ export class RemoteCLI extends Client {
                 .command('subscribe', 'Subscribe to server worker events.')
                 .action((args: any, callback: Function) => {
                     __this._executeDistantCommand("subscribe")
-                        .catch(__this._serverInvalidCommandError)
                         .then((result: any) => {
                             vorpal.log("Subscribed to server events");
                             callback();
-                        });
+                        })
+                        .catch(__this._serverInvalidCommandError);
                 });
     
             /**
@@ -246,11 +246,11 @@ export class RemoteCLI extends Client {
                 .command('unsubscribe', 'Unsubscribe to server worker events.')
                 .action((args: any, callback: Function) => {
                     __this._executeDistantCommand("unsubscribe")
-                        .catch(__this._serverInvalidCommandError)
                         .then((result: any) => {
                             vorpal.log("Unsubscribed to server events");
                             callback();
-                        });
+                        })
+                        .catch(__this._serverInvalidCommandError);
                 });
         }
         catch(e) {
