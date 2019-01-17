@@ -21,8 +21,6 @@ server.onTaskEvent("hello", (data: any, client: any) => {
     console.log("Got event Hello: ", data);
 });
 
-let val = 0;
-
 server.onWorkerGetIdentity( () => {
     return new Promise(((resolve, reject) => {
         let identity: CustomIdentity = {
@@ -30,10 +28,7 @@ server.onWorkerGetIdentity( () => {
             username: "user.name",
             pwd: "password"
         };
-        if (val == 1)
-            reject();
         console.log("Identity created: " + identity);
-        val = 1;
         resolve(identity);
     }));
 });

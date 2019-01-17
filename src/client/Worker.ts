@@ -28,12 +28,12 @@ export class Worker extends Client {
              * Client internal events handling
              */
              this.client.ready((serverProxy: any) => { //Triggered ONCE when first time authenticated
-                logger.worker().info('Connected to server');
+                logger.worker().debug('Connected to server');
             });
             
             this.client.onConnect((client: any) => {
                 if (this.client.isReady()) //Client reconnected
-                    logger.worker().info('Reconnected to server');
+                    logger.worker().debug('Reconnected to server');
             });
     
             this.client.onUnhandledMessage(function (data: any) {
@@ -58,7 +58,7 @@ export class Worker extends Client {
             });
     
             this.client.onDisconnect(function (socket: any) {
-                logger.worker().info('Client disconnected ', socket.id);
+                logger.worker().debug('Client disconnected ', socket.id);
             });
     
             this._internalActions(this);

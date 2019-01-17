@@ -55,8 +55,8 @@ export class Server {
             this.server = new EurecaServer({
                 authenticate: function(identifier: ClientIdentifier, next: Function){
                     try {
-                        identifier.clientId = this.user.clientId; //Save socket clientId
-                        identifier.ip = this.connection.remoteAddress.ip;//Save client ip
+                        identifier.clientId = this.user.clientId; // Save socket clientId
+                        identifier.ip = this.connection.remoteAddress.ip; // Save client ip
                     }
                     catch (e){
                         logger.server().error("Unable to get client info ", e);
@@ -64,7 +64,7 @@ export class Server {
     
                     __this.clients.push(identifier);
                     
-                    //Save connect log
+                    // Save connect log
                     if (identifier.clientId != null && identifier.token != null && identifier.clientType == ClientType.Worker)
                         __this._saveWorkerLog(identifier, "workerStatus", "CONNECTED"); //Save to log
                     
@@ -87,16 +87,21 @@ export class Server {
             });
     
             this.server.onDisconnect(function (connection: any) {
+                // Only for Workers
                 __this.clients.filter(client => client.clientId == connection.id && client.clientType == ClientType.Worker).forEach(client => {
                     __this._saveWorkerLog(client, "workerStatus", "DISCONNECTED"); //Save to log
+
+                    // Release identity
+                    __this._releaseWorkerIdentity(client);
                 });
-                
+
+                // For all clients
                 __this.clients = __this.clients.filter(client => client.clientId !== connection.id); //Remove client from clients
-                logger.server().info('Client %s disconnected', connection.id);
+                logger.server().debug('Client %s disconnected', connection.id);
             });
     
             this.server.onError(function (e: any) {
-                logger.server().error('an error occured', e);
+                logger.server().error('An error occurred', e);
             });
     
             this._internalActions(this);
@@ -310,8 +315,15 @@ export class Server {
 
                         // Check if getIdentity callback promise has been set
                         if (__this.identityCallback != null) {
+
                             // Get identity
                             clientPromises.push(__this.identityCallback().then((identity: WorkerIdentity) => {
+
+                                // Get clientIdentifier
+                                let clientIdentifier: any = __this.clients.find(x => x.clientId == client.clientId);
+                                if (typeof clientIdentifier !== "undefined")
+                                    clientIdentifier.identity = identity; // Save identity for releasing
+
                                 return __this.server.getClient(client.clientId).launchTask(identity, __this.globalParameters).then(() => ++success); // Launch task with identity
                             }).catch((err: any) => {
                                 logger.server().error("Error while getting identity", err);
@@ -348,16 +360,17 @@ export class Server {
             stopTask: function (clientId: any = null, forceStop: boolean = false) {
                 let clientPromises: any[] = [];
                 let context = this;
-                context.async = true; //Define an asynchronous return
+                context.async = true; // Define an asynchronous return
 
                 let total = 0;
+                let errors = 0;
 
                 __this.clients.filter(client => {
-                        //Custom filter if clientId parameter is set
+                        // Custom filter if clientId parameter is set
                         return (clientId !== null) ? (client.clientType == ClientType.Worker && client.clientId.startsWith(clientId)) : (client.clientType == ClientType.Worker);
                     }).forEach(client => { // Get Workers clients ONLY
                         if (forceStop || client.taskStatus != TaskStatus.Idle) { // Stop task only if task is not currently stopped
-                            clientPromises.push(__this.server.getClient(client.clientId).stopTask()); //Stop task
+                            clientPromises.push(__this.server.getClient(client.clientId).stopTask().then(() => __this._releaseWorkerIdentity(client))); //Stop task
                     }
 
                     ++total;
@@ -365,14 +378,29 @@ export class Server {
 
                 Promise.all(clientPromises).catch((e: any) => { //Wait all stops to finish
                     logger.server().error("Unable to stop task ", e);
-                    //TODO Send error to CLI
-                }).then((results: any) => {
+                    ++errors; // Increments errors
+                    return []; // Return a value allowing the .then to be called
+                }).then((results: any) => { // Send success anyway even if failed
                     context.return({
                         success: results.length,
-                        total: total
+                        total: total,
+                        errors: errors
                     });
                 });
             }
+        }
+    }
+
+    /**
+     * Release identity af a worker
+     * @param {ClientIdentifier} client
+     * @private
+     */
+    private _releaseWorkerIdentity(client: ClientIdentifier) {
+        if (typeof this.identityCallback === "function" && typeof this.releaseIdentityCallback === "function" && typeof client.identity !== "undefined") {
+            this.releaseIdentityCallback(client.identity).then(() => {
+                client.identity = undefined; //Reset identity
+            });
         }
     }
 

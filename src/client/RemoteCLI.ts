@@ -164,7 +164,7 @@ export class RemoteCLI extends Client {
                         else // Confirm
                             __this._executeDistantCommand("stopTask", args.clientId, args.options.force)
                                 .then((result: any) => {
-                                    vorpal.log("%d worker's task stopped of %d worker%s", result.success, result.total, (result.total >= 2) ? "s" : "");
+                                    vorpal.log("%d worker's task stopped of %d worker%s. %d error%s\"", result.success, result.total, (result.total >= 2) ? "s" : "", result.errors, (result.errors >= 2) ? "s" : "");
                                     callback();
                                 })
                                 .catch(__this._serverInvalidCommandError);
