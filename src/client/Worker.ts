@@ -3,6 +3,7 @@ import {TaskStatus} from "../models/ClientIdentifier";
 import {logger} from "../logger";
 import {GlobalParameter, GlobalParameterList} from "../models/GlobalParameter";
 import {WorkerConfig} from "../models/WorkerConfig";
+import {WorkerIdentity} from "../models/WorkerIdentity";
 
 const EventEmitter = require("events");
 
@@ -78,10 +79,10 @@ export class Worker extends Client {
          * Action on task launch from the server
          * @param {GlobalParameterList} parameters
          */
-        this.client.exports.launchTask = function(parameters: GlobalParameterList) {
+        this.client.exports.launchTask = function(identity: WorkerIdentity, parameters: GlobalParameterList) {
             //this.serverProxy is injected by eureca
             
-            __this.taskEvent.emit("launchTask", parameters, __this.server);
+            __this.taskEvent.emit("launchTask", identity, parameters, __this.server);
             __this.server.task.taskLaunched().catch((e: any) => {
                 logger.worker().error("Unable to execute command ", e);
             });
@@ -115,7 +116,7 @@ export class Worker extends Client {
      * Add handler on task launch request event
      * @param {(parameters: GlobalParameterList, server: any) => void} callback
      */
-    public onLaunchTask(callback: (parameters: GlobalParameterList, server: any) => void){
+    public onLaunchTask(callback: (identity: WorkerIdentity, parameters: GlobalParameterList, server: any) => void){
         this.taskEvent.on("launchTask", callback);
     }
 

@@ -4,7 +4,7 @@ import {GlobalParameter, GlobalParameterList} from "../models/GlobalParameter";
 import {ServerConfig} from "../models/ServerConfig";
 import {ServerStatus} from './ServerStatus';
 import { Server as EurecaServer } from 'eureca.io';
-import {GetIdentityCallback, ReleaseIdentityCallback} from "../models/WorkerIdentity";
+import {GetIdentityCallback, ReleaseIdentityCallback, WorkerIdentity} from "../models/WorkerIdentity";
 
 const express = require('express')
     , app = express()
@@ -27,8 +27,8 @@ export class Server {
     private subscribedCLISToEvents: string[] = []; //Save the list of subscribed CLI
     private saveLogToDirectory: boolean = false;
     private saveResultToFile: boolean = false;
-    private identityCallback: GetIdentityCallback;
-    private releaseIdentityCallback: ReleaseIdentityCallback;
+    private identityCallback?: GetIdentityCallback;
+    private releaseIdentityCallback?: ReleaseIdentityCallback;
 
     constructor(config: ServerConfig = {}){
         try {
@@ -299,25 +299,44 @@ export class Server {
                 __this._saveTaskParameters(parameters); //Save parameters
 
                 let total = 0;
+                let errors = 0;
+                let success = 0;
 
                 __this.clients.filter(client => {
                         // Custom filter if clientId parameter is set and Worker
                     return (clientId !== null) ? (client.clientType == ClientType.Worker && client.clientId.startsWith(clientId)) : (client.clientType == ClientType.Worker);
                 }).forEach(client => { // Get Workers clients ONLY
                     if (forceLaunch || client.taskStatus != TaskStatus.Running) { // Launch task only if task is not currently running
-                        clientPromises.push(__this.server.getClient(client.clientId).launchTask(__this.globalParameters)); // Launch task
+
+                        // Check if getIdentity callback promise has been set
+                        if (__this.identityCallback != null) {
+                            // Get identity
+                            clientPromises.push(__this.identityCallback().then((identity: WorkerIdentity) => {
+                                return __this.server.getClient(client.clientId).launchTask(identity, __this.globalParameters).then(() => ++success); // Launch task with identity
+                            }).catch((err: any) => {
+                                logger.server().error("Error while getting identity", err);
+                                ++errors; // Increments errors
+                            }));
+                        }
+
+                        // No identity
+                        else {
+                            clientPromises.push(__this.server.getClient(client.clientId).launchTask(null, __this.globalParameters).then(() => ++success)); // Launch task without identity
+                        }
                     }
 
                     ++total;
                 });
 
                 Promise.all(clientPromises).catch((e: any) => { // Wait all launches to finish
-                    logger.server().error("Unable to launch task ", e);
-                    //TODO Send error to CLI
+                    logger.server().error("Unable to launch task", e);
+                    ++errors; // Increments errors
+                    return []; // Return a value allowing the .then to be called
                 }).then((results: any) => { // Send success anyway even if failed
                     context.return({
-                        success: results.length,
-                        total: total
+                        success: success,
+                        total: total,
+                        errors: errors
                     });
                 });
             },
