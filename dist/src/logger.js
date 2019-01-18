@@ -2,37 +2,32 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const log4js = require("log4js");
 exports.logger = log4js;
-/**
- * Configuration
- */
-log4js.configure({
+let configuration = {
     appenders: { out: { type: 'stdout', layout: { type: 'colored' } } },
     categories: { default: { appenders: ['out'], level: 'debug' } }
-});
-/**
- * Custom logger layout for server
- * @returns {Logger}
- */
+};
+log4js.configure(configuration);
 log4js.server = () => {
     return log4js.getLogger("[SERVER]");
 };
-/**
- * Custom logger layout for worker
- * @returns {Logger}
- */
+log4js.setServerLevel = (level) => {
+    configuration.categories["[SERVER]"] = { appenders: ['out'], level: level };
+    log4js.configure(configuration);
+};
 log4js.worker = () => {
     return log4js.getLogger("[WORKER]");
 };
-/**
- * Custom logger layout for CLI
- * @returns {Logger}
- */
+log4js.setWorkerLevel = (level) => {
+    configuration.categories["[WORKER]"] = { appenders: ['out'], level: level };
+    log4js.configure(configuration);
+};
 log4js.cli = () => {
     return log4js.getLogger("[CLI]");
 };
-/**
- * Default logger print functions for default layout
- */
+log4js.setCliLevel = (level) => {
+    configuration.categories["[CLI]"] = { appenders: ['out'], level: level };
+    log4js.configure(configuration);
+};
 log4js.trace = (message) => {
     return log4js.getLogger().trace(message);
 };

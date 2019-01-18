@@ -15,7 +15,6 @@ class ClientIdentifier {
     constructor(groupId, instanceId) {
         this.clientType = ClientType.Worker;
         this.clientId = null;
-        this.commitId = null;
         this.latestReceivedPingTimestamp = 0;
         this.taskStatus = TaskStatus.Idle;
         this.ip = null;
@@ -26,6 +25,12 @@ class ClientIdentifier {
     }
     _generateHash() {
         return Math.random().toString(36).substring(2, 15);
+    }
+    getWorkerIdentity() {
+        return this.identity;
+    }
+    setWorkerIdentity(identity) {
+        this.identity = identity;
     }
 }
 exports.ClientIdentifier = ClientIdentifier;

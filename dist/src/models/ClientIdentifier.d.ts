@@ -1,3 +1,4 @@
+import { WorkerIdentity } from "./WorkerIdentity";
 export declare enum ClientType {
     Worker = 0,
     RemoteCLI = 1
@@ -13,11 +14,14 @@ export declare class ClientIdentifier {
     token: string;
     groupId: string;
     instanceId: string;
-    commitId: any;
+    commitId?: string;
     latestReceivedPingTimestamp: number;
     taskStatus: TaskStatus;
     ip: any;
     reconnect: number;
+    identity?: WorkerIdentity;
     constructor(groupId: string, instanceId: string);
     private _generateHash;
+    getWorkerIdentity(): WorkerIdentity | undefined;
+    setWorkerIdentity(identity: WorkerIdentity): void;
 }
