@@ -204,6 +204,7 @@ export class Server {
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
                     client.taskStatus = TaskStatus.Idle;
                     __this._saveWorkerLog(client, "taskStatus", "ENDED: " + data); //Save to log
+                    __this._releaseWorkerIdentity(client);
                 });
             },
             /**
@@ -370,8 +371,14 @@ export class Server {
                         return (clientId !== null) ? (client.clientType == ClientType.Worker && client.clientId.startsWith(clientId)) : (client.clientType == ClientType.Worker);
                     }).forEach(client => { // Get Workers clients ONLY
                         if (forceStop || client.taskStatus != TaskStatus.Idle) { // Stop task only if task is not currently stopped
-                            clientPromises.push(__this.server.getClient(client.clientId).stopTask().then(() => __this._releaseWorkerIdentity(client))); //Stop task
-                    }
+                            clientPromises.push(
+                                __this.server.getClient(client.clientId).stopTask()
+                                    .catch((e: any) => { // Catch directly error
+                                        logger.server().error("Unable to stop task ", e);
+                                        ++errors; // Increments errors
+                                    })
+                            ); //Stop task
+                        }
 
                     ++total;
                 });
@@ -400,7 +407,7 @@ export class Server {
         if (typeof this.identityCallback === "function" && typeof this.releaseIdentityCallback === "function" && typeof client.identity !== "undefined") {
             this.releaseIdentityCallback(client.identity).then(() => {
                 client.identity = undefined; //Reset identity
-            });
+            }).catch(() => logger.server().error("Unable to release identity for client %s", client.clientId));
         }
     }
 
