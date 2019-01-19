@@ -1,4 +1,4 @@
-# netBOTify [WIP]
+# netBOTify
 
 netBOTify is a real-time and scalable server that lets you execute remote tasks over network using sub-workers.
 An unlimited number of clients (bots) can be connected anywhere from the internet (using HTTP requests).
@@ -10,6 +10,8 @@ Dynamic parameters can be defined at launch time.
 
 - Multiple workers over different servers / IPs
 - No configuration needed on workers (can easily be executed on cloud application platforms)
+- Global parameters sent to all workers
+- Unique parameters (identity) for each workers
 - Automatic reconnection
 
 ## Installation
@@ -18,12 +20,12 @@ Dynamic parameters can be defined at launch time.
 
 ## Usage
 
-- [Server usage](#server)
-- [Worker (bot) usage](#worker)
-- [Remote CLI usage](#cli)
+1. [Server usage](#server)
+2. [Worker (bot) usage](#worker)
+3. [Remote CLI usage](#cli)
 
 ---
-### Server implementation <a id="server"></a>
+### 1. Server implementation <a id="server"></a>
 
 A server can easily be created with:
 ~~~~javascript
@@ -40,6 +42,8 @@ server.connect();
 - `port`: the server listening port (default 8000)
 - `logDirectoryPath`: directory path to save workers events (start / stop / launch / errors / ...)
 - `resultFilePath`: json file path to save all the results for all workers
+- `intervalPrintStatus`: print server info status (workers connected, workers launched, CLIs connected) with interval in seconds (0 is disabled)
+- `logger`: set the minimal printed mode of logs from `debug`, `info`, `error`
 
 #### Server extra methods
 
@@ -48,12 +52,14 @@ server.connect();
 - `.onTaskEnded(callback)`: add an action when a task is ended by a worker. Callback will receive 2 parameters: (data, clientIdentifier)
 - `.onTaskEvent(eventName, callback)`: add an action when a specific event is sent by a worker. Callback will receive 2 parameters: (data, clientIdentifier)
 
-- `.addTaskParameter(parameterKey, defaultValue)`: add a parameter that will be sent to all workers at task launch. To set a parameter value at runtime, use the command `parameters` on CLI and follow the instructions.
+- `.addGlobalParameter(parameterKey, defaultValue)`: add a parameter that will be sent to all workers at task launch. To set a parameter value at runtime, use the command `parameters` on CLI and follow the instructions.
 - `.addServerAction(name, callback)`: add a method to the server that will be callable by any clients (workers / cli) using server.{methodName}(anyParameters). Callback can have any desired parameters
 - `.declareWorkerTask(name)`: declare an custom method on the worker that will be callable by the server.
 
+- `.onWorkerGetIdentity(callback)`: add a callback called on worker launch to give a unique identity to the worker. Callback must return a Promise<WorkerIdentity> type.
+- `.onWorkerReleaseIdentity(callback)`: add a callback called on worker stop / disconnect to release a previously borrowed identity from a worker. The old promise is given to the callback parameters. Callback must return a Promise type.
 ---
-### Worker (BOT) implementation <a id="worker"></a>
+### 2. Worker (BOT) implementation <a id="worker"></a>
 
 To create a worker doing a task simply do:
 ~~~~javascript
@@ -69,8 +75,10 @@ let worker = new Netbotify.Worker({
 });
 
 // Add task content on launch
-worker.onLaunchTask((parameters, server) => {
-    //Parameters contains all parameters defined by the CLI when the task is launched
+worker.onLaunchTask((identity, parameters, server) => {
+    //Identity contains an unique identity given by onWorkerGetIdentity(callback) method on task launch
+    
+    //Parameters contains all global parameters defined by the CLI when the task is launched
     console.log("Parameter 'id': ", parameters.id.value); // Should have defaultValue "12345678"
     console.log("Task is launched by the server");
     
@@ -88,6 +96,7 @@ worker.onStopTask((server) => {
 #### OPTIONAL bot parameters
 - `autoConnect`: if autoConnect is set to false, connect manually to the server with .connect()
 - `identifier`: give a custom identifier to the worker
+- `logger`: set the minimal printed mode of logs from `debug`, `info`, `error`
 
 #### Bot extra methods
 - `.connect()`: if autoConnect is set to false, connect manually to the server
@@ -98,7 +107,7 @@ worker.onStopTask((server) => {
 - `.sendTaskEvent(eventName, data)`: send a custom event to the server
 
 ---
-### Remote CLI implementation <a id="cli"></a>
+### 3. Remote CLI implementation <a id="cli"></a>
 
 The server is controllable by a remote shell that can be created with:
 ~~~~javascript
@@ -124,7 +133,8 @@ cli.addCommand("commandName", "Command description", (args, callback) => {
 - `delimiter`: set a custom prefix for the shell
 - `autoSubscribe`: subscribe automatically the the server events (taks results, task ends) when the server is connected
 - `identifier`: give a custom identifier to the cli
-- 
+- `logger`: set the minimal printed mode of logs from `debug`, `info`, `error`
+
 #### CLI extra methods
 - `.connect()`: if autoConnect is set to false, connect manually to the server
 - `.addCommand(commandWord, commandDescription, callback)`: add an shell command to the CLI defined be the commandWord. Callback will receive 2 parameters: (args, endCommand): the arguments passed to the command and a callback to execute at the end of the command.

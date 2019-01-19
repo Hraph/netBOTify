@@ -6,7 +6,8 @@ let identifier = new src_2.ClientIdentifier("RemoteCLI", "1");
 let cli = new src_1.RemoteCLI({
     uri: "http://localhost:8000/",
     identifier: identifier,
-    autoSubscribe: true
+    autoSubscribe: true,
+    logger: 'debug'
 });
 cli.addCommand("test", "Write a test", (args, callback) => {
     console.log("TEST");

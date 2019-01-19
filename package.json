@@ -1,6 +1,6 @@
 {
   "name": "netbotify",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "A realtime and scalable remote tasks execution bot over network",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
@@ -37,7 +37,7 @@
     "console.table": "^0.10.0",
     "engine.io": "^3.2.0",
     "engine.io-client": "^3.2.1",
-    "eureca.io": "^0.8.2",
+    "eureca.io": "git://github.com/hraph/eureca.io.git",
     "express": "^4.16.3",
     "fs-extra": "^7.0.0",
     "log4js": "^3.0.5",
