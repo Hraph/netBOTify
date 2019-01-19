@@ -38,8 +38,8 @@ class RemoteCLI extends Client_1.Client {
                     logger_1.logger.cli().error('Unknown error', e);
                 }
             });
-            this.client.exports.CLIOnEvent = function (eventName, data = null, clientId) {
-                logger_1.logger.cli().info("EVENT %s (%s):", eventName, clientId.substr(0, 5), data);
+            this.client.exports.CLIOnEvent = function (eventName, data = null, token) {
+                logger_1.logger.cli().info("EVENT %s (%s):", eventName, token, data);
             };
             if (!this.config.delimiter)
                 this.config.delimiter = "netBOTify";
@@ -53,7 +53,7 @@ class RemoteCLI extends Client_1.Client {
                 });
             });
             vorpal
-                .command('launch [clientId]', 'Launch the task on workers.')
+                .command('launch [token]', 'Launch the task on workers.')
                 .option('-f, --force', "Force sending start even if it's already launched")
                 .action(function (args, callback) {
                 let setParametersCommandPromise = [];
@@ -72,7 +72,7 @@ class RemoteCLI extends Client_1.Client {
                         if (!result.continue)
                             callback();
                         else
-                            __this._executeDistantCommand("launchTask", __this.globalParameters, args.clientId, args.options.force)
+                            __this._executeDistantCommand("launchTask", __this.globalParameters, args.token, args.options.force)
                                 .then((result) => {
                                 vorpal.log("%d worker's task launched of %d worker%s. %d error%s", result.success, result.total, (result.total >= 2) ? "s" : "", result.errors, (result.errors >= 2) ? "s" : "");
                                 callback();
@@ -82,7 +82,7 @@ class RemoteCLI extends Client_1.Client {
                 });
             });
             vorpal
-                .command('stop [clientId]', 'Stop the task on workers.')
+                .command('stop [token]', 'Stop the task on workers.')
                 .option('-f, --force', "Force sending stop even if it's already stopped")
                 .action(function (args, callback) {
                 return this.prompt({
@@ -94,7 +94,7 @@ class RemoteCLI extends Client_1.Client {
                     if (!result.continue)
                         callback();
                     else
-                        __this._executeDistantCommand("stopTask", args.clientId, args.options.force)
+                        __this._executeDistantCommand("stopTask", args.token, args.options.force)
                             .then((result) => {
                             vorpal.log("%d worker's task stopped of %d worker%s. %d error%s", result.success, result.total, (result.total >= 2) ? "s" : "", result.errors, (result.errors >= 2) ? "s" : "");
                             callback();
@@ -121,9 +121,9 @@ class RemoteCLI extends Client_1.Client {
                 });
             });
             vorpal
-                .command('workers [clientId]', 'Get server connected workers.')
+                .command('workers [token]', 'Get server connected workers.')
                 .action((args, callback) => {
-                __this._executeDistantCommand("getWorkers", args.clientId)
+                __this._executeDistantCommand("getWorkers", args.token)
                     .then((result) => {
                     vorpal.log(result.length + " workers");
                     vorpal.log(cTable.getTable(result));
@@ -132,9 +132,9 @@ class RemoteCLI extends Client_1.Client {
                     .catch(__this._serverInvalidCommandError);
             });
             vorpal
-                .command('clis [clientId]', 'Get server connected CLIs.')
+                .command('clis [token]', 'Get server connected CLIs.')
                 .action((args, callback) => {
-                __this._executeDistantCommand("getCLIs", args.clientId)
+                __this._executeDistantCommand("getCLIs", args.token)
                     .then((result) => {
                     vorpal.log(result.length + " CLIs");
                     vorpal.log(cTable.getTable(result));

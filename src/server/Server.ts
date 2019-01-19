@@ -31,6 +31,9 @@ export class Server {
     private identityCallback?: GetIdentityCallback;
     private releaseIdentityCallback?: ReleaseIdentityCallback;
 
+    private filteredClientIdentifierCLIKeys = ["token", "ip", "groupId", "instanceId", "reconnect"]; // Reduce client identifier to some keys
+    private filteredClientIdentifierWorkerKeys = ["token", "ip", "groupId", "instanceId", "reconnect", "taskStatus"]; // Reduce client identifier to some keys
+
     constructor(config: ServerConfig = {}){
         try {
             this.config = config;
@@ -121,6 +124,22 @@ export class Server {
     }
 
     /**
+     * Reduce an object properties to a certain list of allowed keys
+     * @param object
+     * @param {Array<String>} keys
+     * @returns {Object}
+     * @private
+     */
+    private _reduceObjectToAllowedKeys(object: any, keys: any): Object {
+        return Object.keys(object)
+            .filter(key => keys.includes(key))
+            .reduce((obj: any, key: any) => {
+                obj[key] = object[key];
+                return obj;
+            }, {});
+    }
+
+    /**
      * Define all internal RPC methods callable from the clients
      * @param {Server} __this
      * @private
@@ -173,10 +192,8 @@ export class Server {
             taskResult: function(result: any) {
                 __this.serverEvent.emit("taskResult", result, this.clientProxy);
 
-                //Send to clis
-                __this._sendEventToSubscribedCLIs("taskResult", result, this.user.clientId); //Send task event to subscribed CLIS
-
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
+                    __this._sendEventToSubscribedCLIs("taskResult", result, client.token); //Send task event to subscribed CLIS
                     __this._saveWorkerResult(client, result); //Save to log
                 });
 
@@ -258,25 +275,25 @@ export class Server {
             },
             /**
              * Return the list of connected workers
-             * @param clientId: Optional parameter to search by client id
+             * @param token: Optional parameter to search by token
              * @returns {ClientIdentifier[]}
              */
-            getWorkers: function(clientId: any = null) {
+            getWorkers: function(token: any = null) {
                 return __this.clients.filter(client => {
-                    //Custom filter if clientId parameter is set
-                    return (clientId !== null) ? (client.clientType == ClientType.Worker && client.clientId.startsWith(clientId)) : (client.clientType == ClientType.Worker);
-                });
+                    //Custom filter if token parameter is set
+                    return (token !== null) ? (client.clientType == ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientType.Worker)
+                }).map(client => __this._reduceObjectToAllowedKeys(client, __this.filteredClientIdentifierWorkerKeys)); // Return restricted object
             },
             /**
              * Return the list of connected clis
-             * @param clientId: Optional parameter to search by client id
+             * @param token: Optional parameter to search by token
              * @returns {ClientIdentifier[]}
              */
-            getCLIs: function(clientId: any = null) {
+            getCLIs: function(token: any = null) {
                 return __this.clients.filter(client => {
-                    //Custom filter if clientId parameter is set
-                    return (clientId !== null) ? (client.clientType == ClientType.RemoteCLI && client.clientId.startsWith(clientId)) : (client.clientType == ClientType.RemoteCLI);
-                });
+                    //Custom filter if token parameter is set
+                    return (token !== null) ? (client.clientType == ClientType.RemoteCLI && client.token.startsWith(token)) : (client.clientType == ClientType.RemoteCLI);
+                }).map(client => __this._reduceObjectToAllowedKeys(client, __this.filteredClientIdentifierCLIKeys)); // Return restricted object
             },
             /**
              * Get the list of registered global parameters for all workers
@@ -295,10 +312,10 @@ export class Server {
             /**
              * Launch a task on all workers or specified workers' client id
              * @param {GlobalParameterList} parameters
-             * @param clientId
+             * @param token: Specific token filter
              * @param {boolean} forceLaunch: Launch task even if the task status is already launched
              */
-            launchTask: function (parameters: GlobalParameterList = {}, clientId: any = null, forceLaunch: boolean = false) {
+            launchTask: function (parameters: GlobalParameterList = {}, token: any = null, forceLaunch: boolean = false) {
                 let clientPromises: any[] = [];
                 let context = this;
                 context.async = true; //Define an asynchronous return
@@ -310,8 +327,8 @@ export class Server {
                 let success = 0;
 
                 __this.clients.filter(client => {
-                        // Custom filter if clientId parameter is set and Worker
-                    return (clientId !== null) ? (client.clientType == ClientType.Worker && client.clientId.startsWith(clientId)) : (client.clientType == ClientType.Worker);
+                        // Custom filter if token parameter is set and Worker
+                    return (token !== null) ? (client.clientType == ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientType.Worker);
                 }).forEach(client => { // Get Workers clients ONLY
                     if (forceLaunch || client.taskStatus != TaskStatus.Running) { // Launch task only if task is not currently running
 
@@ -356,10 +373,10 @@ export class Server {
             },
             /**
              * Stop a task on all workers or specified workers' client id
-             * @param clientId
+             * @param token: Specific token filter
              * @param {boolean} forceStop: Stop the task even if the task status is already stopped
              */
-            stopTask: function (clientId: any = null, forceStop: boolean = false) {
+            stopTask: function (token: any = null, forceStop: boolean = false) {
                 let clientPromises: any[] = [];
                 let context = this;
                 context.async = true; // Define an asynchronous return
@@ -368,8 +385,8 @@ export class Server {
                 let errors = 0;
 
                 __this.clients.filter(client => {
-                        // Custom filter if clientId parameter is set
-                        return (clientId !== null) ? (client.clientType == ClientType.Worker && client.clientId.startsWith(clientId)) : (client.clientType == ClientType.Worker);
+                        // Custom filter if token parameter is set
+                        return (token !== null) ? (client.clientType == ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientType.Worker);
                     }).forEach(client => { // Get Workers clients ONLY
                         if (forceStop || client.taskStatus != TaskStatus.Idle) { // Stop task only if task is not currently stopped
                             clientPromises.push(
@@ -408,7 +425,7 @@ export class Server {
         if (typeof this.identityCallback === "function" && typeof this.releaseIdentityCallback === "function" && typeof client.identity !== "undefined") {
             this.releaseIdentityCallback(client.identity).then(() => {
                 client.identity = undefined; //Reset identity
-            }).catch(() => logger.server().error("Unable to release identity for client %s", client.clientId));
+            }).catch(() => logger.server().error("Unable to release identity for client %s", client.token));
         }
     }
 
@@ -416,13 +433,13 @@ export class Server {
      * Forward an event to all the subscribed CLIs
      * @param {string} eventName: The name of the event
      * @param data: Optional parameters
-     * @param {string} clientId: The clientId of the origin worker
+     * @param {string} token: The token of the origin worker
      * @private
      */
-    private _sendEventToSubscribedCLIs(eventName: string, data: any = null, clientId: string){
+    private _sendEventToSubscribedCLIs(eventName: string, data: any = null, token: string){
         this.clients.filter(client => (client.clientType == ClientType.RemoteCLI && this.subscribedCLISToEvents.indexOf(client.token) !== -1)) //Get subscribed clients wich are CLIS
                     .forEach(client => { 
-            this.server.getClient(client.clientId).CLIOnEvent(eventName, data, clientId); //Send event
+            this.server.getClient(client.clientId).CLIOnEvent(eventName, data, token); //Send event
         });
     }
 
@@ -461,7 +478,7 @@ export class Server {
             
             function processErr(err: any){
                 logger.server().error('Unable to save log: ', err);
-                __this._sendEventToSubscribedCLIs("saveLogError", "Save log error " + err, client.clientId);
+                __this._sendEventToSubscribedCLIs("saveLogError", "Save log error " + err, client.token);
             }
             
             //Create directory if not exists and write to file
@@ -486,7 +503,7 @@ export class Server {
 
             function processErr(err: any){
                 logger.server().error('Unable to save result: ', err);
-                __this._sendEventToSubscribedCLIs("saveResultError", "Save log result " + err, client.clientId);
+                __this._sendEventToSubscribedCLIs("saveResultError", "Save log result " + err, client.token);
             }
             
             //Create directory if not exists and write to file
@@ -512,7 +529,7 @@ export class Server {
             
             function processErr(err: any){
                 logger.server().error('Unable to save image: ', err);
-                __this._sendEventToSubscribedCLIs("saveImageError", "Save image error " + err, client.clientId);
+                __this._sendEventToSubscribedCLIs("saveImageError", "Save image error " + err, client.token);
             }
             
             try {

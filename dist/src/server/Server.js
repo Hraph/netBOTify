@@ -14,6 +14,8 @@ class Server {
         this.subscribedCLISToEvents = [];
         this.saveLogToDirectory = false;
         this.saveResultToFile = false;
+        this.filteredClientIdentifierCLIKeys = ["token", "ip", "groupId", "instanceId", "reconnect"];
+        this.filteredClientIdentifierWorkerKeys = ["token", "ip", "groupId", "instanceId", "reconnect", "taskStatus"];
         try {
             this.config = config;
             let __this = this;
@@ -67,6 +69,14 @@ class Server {
             process.exit(1);
         }
     }
+    _reduceObjectToAllowedKeys(object, keys) {
+        return Object.keys(object)
+            .filter(key => keys.includes(key))
+            .reduce((obj, key) => {
+            obj[key] = object[key];
+            return obj;
+        }, {});
+    }
     _internalActions(__this) {
         this.server.exports.ping = function () {
             __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
@@ -91,8 +101,8 @@ class Server {
             },
             taskResult: function (result) {
                 __this.serverEvent.emit("taskResult", result, this.clientProxy);
-                __this._sendEventToSubscribedCLIs("taskResult", result, this.user.clientId);
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
+                    __this._sendEventToSubscribedCLIs("taskResult", result, client.token);
                     __this._saveWorkerResult(client, result);
                 });
             },
@@ -138,15 +148,15 @@ class Server {
                     }
                 });
             },
-            getWorkers: function (clientId = null) {
+            getWorkers: function (token = null) {
                 return __this.clients.filter(client => {
-                    return (clientId !== null) ? (client.clientType == ClientIdentifier_1.ClientType.Worker && client.clientId.startsWith(clientId)) : (client.clientType == ClientIdentifier_1.ClientType.Worker);
-                });
+                    return (token !== null) ? (client.clientType == ClientIdentifier_1.ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientIdentifier_1.ClientType.Worker);
+                }).map(client => __this._reduceObjectToAllowedKeys(client, __this.filteredClientIdentifierWorkerKeys));
             },
-            getCLIs: function (clientId = null) {
+            getCLIs: function (token = null) {
                 return __this.clients.filter(client => {
-                    return (clientId !== null) ? (client.clientType == ClientIdentifier_1.ClientType.RemoteCLI && client.clientId.startsWith(clientId)) : (client.clientType == ClientIdentifier_1.ClientType.RemoteCLI);
-                });
+                    return (token !== null) ? (client.clientType == ClientIdentifier_1.ClientType.RemoteCLI && client.token.startsWith(token)) : (client.clientType == ClientIdentifier_1.ClientType.RemoteCLI);
+                }).map(client => __this._reduceObjectToAllowedKeys(client, __this.filteredClientIdentifierCLIKeys));
             },
             getGlobalParameters: function () {
                 return __this.globalParameters;
@@ -154,7 +164,7 @@ class Server {
             saveGlobalParameters: function (parameters = {}) {
                 __this._saveTaskParameters(parameters);
             },
-            launchTask: function (parameters = {}, clientId = null, forceLaunch = false) {
+            launchTask: function (parameters = {}, token = null, forceLaunch = false) {
                 let clientPromises = [];
                 let context = this;
                 context.async = true;
@@ -163,7 +173,7 @@ class Server {
                 let errors = 0;
                 let success = 0;
                 __this.clients.filter(client => {
-                    return (clientId !== null) ? (client.clientType == ClientIdentifier_1.ClientType.Worker && client.clientId.startsWith(clientId)) : (client.clientType == ClientIdentifier_1.ClientType.Worker);
+                    return (token !== null) ? (client.clientType == ClientIdentifier_1.ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientIdentifier_1.ClientType.Worker);
                 }).forEach(client => {
                     if (forceLaunch || client.taskStatus != ClientIdentifier_1.TaskStatus.Running) {
                         if (__this.identityCallback != null) {
@@ -195,14 +205,14 @@ class Server {
                     });
                 });
             },
-            stopTask: function (clientId = null, forceStop = false) {
+            stopTask: function (token = null, forceStop = false) {
                 let clientPromises = [];
                 let context = this;
                 context.async = true;
                 let total = 0;
                 let errors = 0;
                 __this.clients.filter(client => {
-                    return (clientId !== null) ? (client.clientType == ClientIdentifier_1.ClientType.Worker && client.clientId.startsWith(clientId)) : (client.clientType == ClientIdentifier_1.ClientType.Worker);
+                    return (token !== null) ? (client.clientType == ClientIdentifier_1.ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientIdentifier_1.ClientType.Worker);
                 }).forEach(client => {
                     if (forceStop || client.taskStatus != ClientIdentifier_1.TaskStatus.Idle) {
                         clientPromises.push(__this.server.getClient(client.clientId).stopTask()
@@ -231,13 +241,13 @@ class Server {
         if (typeof this.identityCallback === "function" && typeof this.releaseIdentityCallback === "function" && typeof client.identity !== "undefined") {
             this.releaseIdentityCallback(client.identity).then(() => {
                 client.identity = undefined;
-            }).catch(() => logger_1.logger.server().error("Unable to release identity for client %s", client.clientId));
+            }).catch(() => logger_1.logger.server().error("Unable to release identity for client %s", client.token));
         }
     }
-    _sendEventToSubscribedCLIs(eventName, data = null, clientId) {
+    _sendEventToSubscribedCLIs(eventName, data = null, token) {
         this.clients.filter(client => (client.clientType == ClientIdentifier_1.ClientType.RemoteCLI && this.subscribedCLISToEvents.indexOf(client.token) !== -1))
             .forEach(client => {
-            this.server.getClient(client.clientId).CLIOnEvent(eventName, data, clientId);
+            this.server.getClient(client.clientId).CLIOnEvent(eventName, data, token);
         });
     }
     _saveTaskParameters(parameters = {}) {
@@ -259,7 +269,7 @@ class Server {
             let logPath = path.join(this.config.logDirectoryPath, client.groupId, client.instanceId + "." + client.token + ".log.json");
             function processErr(err) {
                 logger_1.logger.server().error('Unable to save log: ', err);
-                __this._sendEventToSubscribedCLIs("saveLogError", "Save log error " + err, client.clientId);
+                __this._sendEventToSubscribedCLIs("saveLogError", "Save log error " + err, client.token);
             }
             fs.ensureFile(logPath).then(() => {
                 fs.appendFile(logPath, formatedData).catch(processErr);
@@ -273,7 +283,7 @@ class Server {
             let formatedData = "[" + (new Date).toISOString() + "] - " + "[" + client.token + "] - " + castedData + "\n";
             function processErr(err) {
                 logger_1.logger.server().error('Unable to save result: ', err);
-                __this._sendEventToSubscribedCLIs("saveResultError", "Save log result " + err, client.clientId);
+                __this._sendEventToSubscribedCLIs("saveResultError", "Save log result " + err, client.token);
             }
             fs.ensureFile(this.config.resultFilePath).then(() => {
                 fs.appendFile(this.config.resultFilePath, formatedData).catch(processErr);
@@ -286,7 +296,7 @@ class Server {
             let imagePath = path.join(this.config.logDirectoryPath, client.groupId, client.instanceId + "." + client.token + "." + fileName + "." + extension);
             function processErr(err) {
                 logger_1.logger.server().error('Unable to save image: ', err);
-                __this._sendEventToSubscribedCLIs("saveImageError", "Save image error " + err, client.clientId);
+                __this._sendEventToSubscribedCLIs("saveImageError", "Save image error " + err, client.token);
             }
             try {
                 if (extension == "png")

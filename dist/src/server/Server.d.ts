@@ -13,7 +13,10 @@ export declare class Server {
     private saveResultToFile;
     private identityCallback?;
     private releaseIdentityCallback?;
+    private filteredClientIdentifierCLIKeys;
+    private filteredClientIdentifierWorkerKeys;
     constructor(config?: ServerConfig);
+    private _reduceObjectToAllowedKeys;
     private _internalActions;
     private _releaseWorkerIdentity;
     private _sendEventToSubscribedCLIs;

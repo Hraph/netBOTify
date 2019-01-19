@@ -75,11 +75,11 @@ export class RemoteCLI extends Client {
              * Process when an event is forwarded from the server to the CLI
              * @param {string} eventName: The custom event name
              * @param data: Optional parameters
-             * @param {string} clientId: The client od of the origin worker
+             * @param {string} token: The client od of the origin worker
              * @constructor
              */
-            this.client.exports.CLIOnEvent = function(eventName: string, data: any = null, clientId: string) {
-                logger.cli().info("EVENT %s (%s):", eventName, clientId.substr(0,5), data); //Print the event with a shorten client id
+            this.client.exports.CLIOnEvent = function(eventName: string, data: any = null, token: string) {
+                logger.cli().info("EVENT %s (%s):", eventName, token, data); //Print the event with a shorten client id
             }
     
     
@@ -105,7 +105,7 @@ export class RemoteCLI extends Client {
              * Launch task command
              */
             vorpal
-                .command('launch [clientId]', 'Launch the task on workers.')
+                .command('launch [token]', 'Launch the task on workers.')
                 .option('-f, --force', "Force sending start even if it's already launched")
                 .action(function(args: any, callback: Function) {
                     let setParametersCommandPromise = [];
@@ -133,7 +133,7 @@ export class RemoteCLI extends Client {
                             if (!result.continue) // Abort
                                 callback();
                             else // Confirm
-                                __this._executeDistantCommand("launchTask", __this.globalParameters, args.clientId, args.options.force)  //Execute task with parameters
+                                __this._executeDistantCommand("launchTask", __this.globalParameters, args.token, args.options.force)  //Execute task with parameters
                                     .then((result: any) => {
                                         vorpal.log("%d worker's task launched of %d worker%s. %d error%s", result.success, result.total, (result.total >= 2) ? "s" : "", result.errors, (result.errors >= 2) ? "s" : "");
                                         callback();
@@ -148,7 +148,7 @@ export class RemoteCLI extends Client {
              * Stop task command
              */
             vorpal
-                .command('stop [clientId]', 'Stop the task on workers.')
+                .command('stop [token]', 'Stop the task on workers.')
                 .option('-f, --force', "Force sending stop even if it's already stopped")
                 .action(function(args: any, callback: Function) {
 
@@ -163,7 +163,7 @@ export class RemoteCLI extends Client {
                         if (!result.continue) // Abort
                             callback();
                         else // Confirm
-                            __this._executeDistantCommand("stopTask", args.clientId, args.options.force)
+                            __this._executeDistantCommand("stopTask", args.token, args.options.force)
                                 .then((result: any) => {
                                     vorpal.log("%d worker's task stopped of %d worker%s. %d error%s", result.success, result.total, (result.total >= 2) ? "s" : "", result.errors, (result.errors >= 2) ? "s" : "");
                                     callback();
@@ -200,9 +200,9 @@ export class RemoteCLI extends Client {
              * List of connected workers command
              */
             vorpal
-                .command('workers [clientId]', 'Get server connected workers.')
+                .command('workers [token]', 'Get server connected workers.')
                 .action((args: any, callback: Function) => {
-                    __this._executeDistantCommand("getWorkers", args.clientId)
+                    __this._executeDistantCommand("getWorkers", args.token)
                         .then((result: any) => {
                             vorpal.log(result.length + " workers");
                             vorpal.log(cTable.getTable(result));
@@ -215,9 +215,9 @@ export class RemoteCLI extends Client {
              * List of connected CLIs command
              */
             vorpal
-                .command('clis [clientId]', 'Get server connected CLIs.')
+                .command('clis [token]', 'Get server connected CLIs.')
                 .action((args: any, callback: Function) => {
-                    __this._executeDistantCommand("getCLIs", args.clientId)
+                    __this._executeDistantCommand("getCLIs", args.token)
                         .then((result: any) => {
                             vorpal.log(result.length + " CLIs");
                             vorpal.log(cTable.getTable(result));
