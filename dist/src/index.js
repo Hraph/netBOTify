@@ -4,8 +4,9 @@ function __export(m) {
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 __export(require("./client/Client"));
-__export(require("./models/ClientIdentifier"));
 __export(require("./client/RemoteCLI"));
 __export(require("./server/Server"));
 __export(require("./client/Worker"));
+__export(require("./models/ClientIdentifier"));
+__export(require("./models/GlobalParameter"));
 //# sourceMappingURL=index.js.map

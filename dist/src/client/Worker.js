@@ -90,6 +90,9 @@ class Worker extends Client_1.Client {
         if (this.server !== null)
             this.server.task.b64Image(fileName, extension, buffer);
     }
+    logger() {
+        return logger_1.logger.worker();
+    }
 }
 exports.Worker = Worker;
 //# sourceMappingURL=Worker.js.map

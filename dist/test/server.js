@@ -31,4 +31,5 @@ server.onWorkerReleaseIdentity((identity => {
     }));
 }));
 server.connect();
+server.logger().info("TEST");
 //# sourceMappingURL=server.js.map

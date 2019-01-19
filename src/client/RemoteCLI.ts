@@ -3,6 +3,7 @@ import {ClientIdentifier, ClientType, TaskStatus} from "../models/ClientIdentifi
 import {logger} from "../logger";
 import {GlobalParameter, GlobalParameterList} from "../models/GlobalParameter";
 import {RemoteCLIConfig} from "../models/RemoteCLIConfig";
+import {Logger} from "log4js";
 
 const EventEmitter = require("events"),
       vorpal = require('vorpal')(),
@@ -377,6 +378,14 @@ export class RemoteCLI extends Client {
             .action((vorpalArgs: any, vorpalCallback: Function) => {
                 callback(vorpalArgs, vorpalCallback);
             });
+    }
+
+    /**
+     * Get the cli logger using set configuration
+     * @returns {Logger}
+     */
+    public logger(): Logger {
+        return logger.cli();
     }
 
 }

@@ -2,6 +2,7 @@ import { Client } from "./Client";
 import { GlobalParameterList } from "../models/GlobalParameter";
 import { WorkerConfig } from "../models/WorkerConfig";
 import { WorkerIdentity } from "../models/WorkerIdentity";
+import { Logger } from "log4js";
 export declare class Worker extends Client {
     private taskEvent;
     constructor(config?: WorkerConfig);
@@ -13,4 +14,5 @@ export declare class Worker extends Client {
     sendTaskEvent(eventName: string, data?: any): void;
     sendTaskEnded(data?: any): void;
     sendB64Image(fileName: string, extension: string, buffer: string): void;
+    logger(): Logger;
 }

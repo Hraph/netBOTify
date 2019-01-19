@@ -236,6 +236,9 @@ class RemoteCLI extends Client_1.Client {
             callback(vorpalArgs, vorpalCallback);
         });
     }
+    logger() {
+        return logger_1.logger.cli();
+    }
 }
 exports.RemoteCLI = RemoteCLI;
 //# sourceMappingURL=RemoteCLI.js.map

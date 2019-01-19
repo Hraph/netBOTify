@@ -28,22 +28,22 @@ log4js.setCliLevel = (level) => {
     configuration.categories["[CLI]"] = { appenders: ['out'], level: level };
     log4js.configure(configuration);
 };
-log4js.trace = (message) => {
-    return log4js.getLogger().trace(message);
+log4js.trace = (message, ...args) => {
+    return log4js.getLogger().trace(message, ...args);
 };
-log4js.debug = (message) => {
-    return log4js.getLogger().debug(message);
+log4js.debug = (message, ...args) => {
+    return log4js.getLogger().debug(message, ...args);
 };
-log4js.info = (message) => {
-    return log4js.getLogger().info(message);
+log4js.info = (message, ...args) => {
+    return log4js.getLogger().info(message, ...args);
 };
-log4js.warn = (message) => {
-    return log4js.getLogger().warn(message);
+log4js.warn = (message, ...args) => {
+    return log4js.getLogger().warn(message, ...args);
 };
-log4js.error = (message) => {
-    return log4js.getLogger().error(message);
+log4js.error = (message, ...args) => {
+    return log4js.getLogger().error(message, ...args);
 };
-log4js.fatal = (message) => {
-    return log4js.getLogger().fatal(message);
+log4js.fatal = (message, ...args) => {
+    return log4js.getLogger().fatal(message, ...args);
 };
 //# sourceMappingURL=logger.js.map

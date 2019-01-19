@@ -4,6 +4,7 @@ import {logger} from "../logger";
 import {GlobalParameter, GlobalParameterList} from "../models/GlobalParameter";
 import {WorkerConfig} from "../models/WorkerConfig";
 import {WorkerIdentity} from "../models/WorkerIdentity";
+import {Logger} from "log4js";
 
 const EventEmitter = require("events");
 
@@ -175,4 +176,12 @@ export class Worker extends Client {
          if (this.server !== null)
             this.server.task.b64Image(fileName, extension, buffer);
      }
+
+    /**
+     * Get the worker logger using set configuration
+     * @returns {Logger}
+     */
+    public logger(): Logger {
+        return logger.worker();
+    }
 }

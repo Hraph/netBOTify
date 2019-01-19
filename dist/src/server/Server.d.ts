@@ -1,6 +1,7 @@
 import { ClientIdentifier } from "../models/ClientIdentifier";
 import { ServerConfig } from "../models/ServerConfig";
 import { GetIdentityCallback, ReleaseIdentityCallback } from "../models/WorkerIdentity";
+import { Logger } from "log4js";
 export declare class Server {
     clients: ClientIdentifier[];
     private config;
@@ -29,4 +30,5 @@ export declare class Server {
     declareWorkerTask(name: string): void;
     onWorkerGetIdentity(callback: GetIdentityCallback): void;
     onWorkerReleaseIdentity(callback: ReleaseIdentityCallback): void;
+    logger(): Logger;
 }

@@ -331,6 +331,9 @@ class Server {
     onWorkerReleaseIdentity(callback) {
         this.releaseIdentityCallback = callback;
     }
+    logger() {
+        return logger_1.logger.server();
+    }
 }
 exports.Server = Server;
 //# sourceMappingURL=Server.js.map

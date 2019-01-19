@@ -5,6 +5,7 @@ import {ServerConfig} from "../models/ServerConfig";
 import {ServerStatus} from './ServerStatus';
 import { Server as EurecaServer } from 'eureca.io';
 import {GetIdentityCallback, ReleaseIdentityCallback, WorkerIdentity} from "../models/WorkerIdentity";
+import {Logger} from "log4js";
 
 const express = require('express')
     , app = express()
@@ -606,5 +607,13 @@ export class Server {
      */
     public onWorkerReleaseIdentity(callback: ReleaseIdentityCallback){
         this.releaseIdentityCallback = callback;
+    }
+
+    /**
+     * Get the server logger using set configuration
+     * @returns {Logger}
+     */
+    public logger(): Logger {
+        return logger.server();
     }
 }
