@@ -566,12 +566,12 @@ export class Server {
     }
 
     /**
-     * Add a custom task parameter
+     * Add a custom task parameter for all workers
      * @param {string} key: The parameter key
      * @param defaultValue: Default initial value if value is not set
      * @param value: Initial value
      */
-    public addTaskParameter(key: string, defaultValue: any, value: any = null){
+    public addGlobalParameter(key: string, defaultValue: any, value: any = null){
         this.globalParameters[key] = (new GlobalParameter(key, defaultValue, value));
     }
 

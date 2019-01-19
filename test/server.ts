@@ -15,7 +15,7 @@ let server = new Server({
     logger: 'debug'
 });
 
-server.addTaskParameter("id", "12345678");
+server.addGlobalParameter("id", "12345678");
 
 server.onTaskEvent("hello", (data: any, client: any) => {
     console.log("Got event Hello: ", data);
