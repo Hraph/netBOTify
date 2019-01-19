@@ -9,7 +9,7 @@ let server = new src_1.Server({
     intervalPrintStatus: 60,
     logger: 'debug'
 });
-server.addTaskParameter("id", "12345678");
+server.addGlobalParameter("id", "12345678");
 server.onTaskEvent("hello", (data, client) => {
     console.log("Got event Hello: ", data);
 });

@@ -316,7 +316,7 @@ class Server {
     onTaskEnded(callback) {
         this.serverEvent.on("taskEnded", callback);
     }
-    addTaskParameter(key, defaultValue, value = null) {
+    addGlobalParameter(key, defaultValue, value = null) {
         this.globalParameters[key] = (new GlobalParameter_1.GlobalParameter(key, defaultValue, value));
     }
     addServerAction(name, callback) {

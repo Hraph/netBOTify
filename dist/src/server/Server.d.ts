@@ -24,7 +24,7 @@ export declare class Server {
     onTaskResult(callback: (result: any, client: any) => void): void;
     onTaskEvent(eventName: string, callback: (data: any, client: any) => void): void;
     onTaskEnded(callback: (data: any, client: any) => void): void;
-    addTaskParameter(key: string, defaultValue: any, value?: any): void;
+    addGlobalParameter(key: string, defaultValue: any, value?: any): void;
     addServerAction(name: string, callback: Function): void;
     declareWorkerTask(name: string): void;
     onWorkerGetIdentity(callback: GetIdentityCallback): void;
