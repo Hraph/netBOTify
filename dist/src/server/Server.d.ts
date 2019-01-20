@@ -25,9 +25,9 @@ export declare class Server {
     private _saveWorkerResult;
     private _saveWorkerB64Image;
     connect(): void;
-    onTaskResult(callback: (result: any, client: any) => void): void;
-    onTaskEvent(eventName: string, callback: (data: any, client: any) => void): void;
-    onTaskEnded(callback: (data: any, client: any) => void): void;
+    onTaskResult(callback: (result: any, identifier: ClientIdentifier, workerProxy: any) => void): void;
+    onTaskEvent(eventName: string, callback: (data: any, identifier: ClientIdentifier, workerProxy: any) => void): void;
+    onTaskEnded(callback: (data: any, identifier: ClientIdentifier, workerProxy: any) => void): void;
     addGlobalParameter(key: string, defaultValue: any, value?: any): void;
     addServerAction(name: string, callback: Function): void;
     declareWorkerTask(name: string): void;

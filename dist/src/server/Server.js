@@ -100,21 +100,24 @@ class Server {
             taskStatus: function (log) {
             },
             taskResult: function (result) {
-                __this.serverEvent.emit("taskResult", result, this.clientProxy);
+                let workerProxy = this.clientProxy;
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
+                    __this.serverEvent.emit("taskResult", result, client, workerProxy);
                     __this._sendEventToSubscribedCLIs("taskResult", result, client.token);
                     __this._saveWorkerResult(client, result);
                 });
             },
             taskEvent: function (eventName, data = null) {
-                __this.serverEvent.emit("taskEvent:" + eventName, data);
+                let workerProxy = this.clientProxy;
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
+                    __this.serverEvent.emit("taskEvent:" + eventName, data, client, workerProxy);
                     __this._saveWorkerLog(client, eventName, data);
                 });
             },
             taskEnded: function (data) {
-                __this.serverEvent.emit("taskEnded", data, this.clientProxy);
+                let workerProxy = this.clientProxy;
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
+                    __this.serverEvent.emit("taskEnded", data, client, workerProxy);
                     client.taskStatus = ClientIdentifier_1.TaskStatus.Idle;
                     __this._saveWorkerLog(client, "taskStatus", "ENDED: " + data);
                     __this._releaseWorkerIdentity(client);

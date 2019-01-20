@@ -190,9 +190,12 @@ export class Server {
              * @param result
              */
             taskResult: function(result: any) {
-                __this.serverEvent.emit("taskResult", result, this.clientProxy);
+                let workerProxy = this.clientProxy;
+
 
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
+                    __this.serverEvent.emit("taskResult", result, client, workerProxy);
+
                     __this._sendEventToSubscribedCLIs("taskResult", result, client.token); //Send task event to subscribed CLIS
                     __this._saveWorkerResult(client, result); //Save to log
                 });
@@ -205,10 +208,12 @@ export class Server {
              * @param data
              */
             taskEvent: function(eventName: string, data: any = null){
-                __this.serverEvent.emit("taskEvent:" + eventName, data);
+                let workerProxy = this.clientProxy;
 
                 //Save to log
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
+                    __this.serverEvent.emit("taskEvent:" + eventName, data, client, workerProxy);
+
                     __this._saveWorkerLog(client, eventName, data);
                 });
             },
@@ -217,9 +222,11 @@ export class Server {
              * @param data
              */
             taskEnded: function(data: any) {
-                __this.serverEvent.emit("taskEnded", data, this.clientProxy); //TODO pass the client identifier
+                let workerProxy = this.clientProxy;
 
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
+                    __this.serverEvent.emit("taskEnded", data, client, workerProxy);
+
                     client.taskStatus = TaskStatus.Idle;
                     __this._saveWorkerLog(client, "taskStatus", "ENDED: " + data); //Save to log
                     __this._releaseWorkerIdentity(client);
@@ -562,7 +569,7 @@ export class Server {
      * Add handler on task result event
      * @param {(result: any, client: any) => void} callback
      */
-    public onTaskResult(callback: (result: any, client: any) => void){
+    public onTaskResult(callback: (result: any, identifier: ClientIdentifier, workerProxy: any) => void){
         this.serverEvent.on("taskResult", callback);
     }
 
@@ -571,7 +578,7 @@ export class Server {
      * @param {string} eventName
      * @param {(data: any, client: any) => void} callback
      */
-    public onTaskEvent(eventName: string, callback: (data: any, client: any) => void){
+    public onTaskEvent(eventName: string, callback: (data: any, identifier: ClientIdentifier, workerProxy: any) => void){
         this.serverEvent.on("taskEvent:" + eventName, callback);
     }
 
@@ -579,7 +586,7 @@ export class Server {
      * Add handler on task end event
      * @param {(data: any, client: any) => void} callback
      */
-    public onTaskEnded(callback: (data: any, client: any) => void){
+    public onTaskEnded(callback: (data: any, identifier: ClientIdentifier, workerProxy: any) => void){
         this.serverEvent.on("taskEnded", callback);
     }
 

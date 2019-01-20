@@ -47,10 +47,10 @@ server.connect();
 
 #### Server extra methods
 
-- `.connect()`: launch the server on the specified port in paremeters (default port is 8000)
-- `.onTaskResult(callback)`: add an action when a result is given by a worker. Callback will receive 2 parameters: (result, clientIdentifier)
-- `.onTaskEnded(callback)`: add an action when a task is ended by a worker. Callback will receive 2 parameters: (data, clientIdentifier)
-- `.onTaskEvent(eventName, callback)`: add an action when a specific event is sent by a worker. Callback will receive 2 parameters: (data, clientIdentifier)
+- `.connect()`: launch the server on the specified port in parameters (default port is 8000)
+- `.onTaskResult(callback)`: add an action when a result is given by a worker. Callback will receive 3 parameters: (result, clientIdentifier, workerProxy)
+- `.onTaskEnded(callback)`: add an action when a task is ended by a worker. Callback will receive 3 parameters: (data, clientIdentifier, workerProxy)
+- `.onTaskEvent(eventName, callback)`: add an action when a specific event is sent by a worker. Callback will receive 3 parameters: (data, clientIdentifier, workerProxy)
 
 - `.addGlobalParameter(parameterKey, defaultValue)`: add a parameter that will be sent to all workers at task launch. To set a parameter value at runtime, use the command `parameters` on CLI and follow the instructions.
 - `.addServerAction(name, callback)`: add a method to the server that will be callable by any clients (workers / cli) using server.{methodName}(anyParameters). Callback can have any desired parameters
