@@ -601,9 +601,9 @@ export class Server {
     }
 
     /**
-     * Get a particular parameter by key
+     * Get a particular parameter by key or false if not found
      * @param {string} key
-     * @returns {GlobalParameter<any> | false}
+     * @returns {GlobalParameter<any>}
      */
     public getGlobalParameter(key: string){
         if (this.globalParameters.hasOwnProperty(key)) {
