@@ -205,7 +205,8 @@ export class RemoteCLI extends Client {
                     __this._executeDistantCommand("getWorkers", args.token)
                         .then((result: any) => {
                             vorpal.log(result.length + " workers");
-                            vorpal.log(cTable.getTable(result));
+                            if (result.length > 0)
+                                vorpal.log(cTable.getTable(result));
                             callback();
                         })
                         .catch(__this._serverInvalidCommandError);
@@ -220,7 +221,8 @@ export class RemoteCLI extends Client {
                     __this._executeDistantCommand("getCLIs", args.token)
                         .then((result: any) => {
                             vorpal.log(result.length + " CLIs");
-                            vorpal.log(cTable.getTable(result));
+                            if (result.length > 0)
+                                vorpal.log(cTable.getTable(result));
                             callback();
                         })
                         .catch(__this._serverInvalidCommandError);
