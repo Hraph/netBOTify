@@ -131,7 +131,7 @@ cli.addCommand("commandName", "Command description", (args, callback) => {
 #### OPTIONAL CLI parameters
 - `autoConnect`: if autoConnect is set to false, connect manually to the server with .connect()
 - `delimiter`: set a custom prefix for the shell
-- `autoSubscribe`: subscribe automatically the the server events (taks results, task ends) when the server is connected
+- `autoSubscribe`: subscribe automatically the the server events (tasks results, task ends) when the server is connected
 - `identifier`: give a custom identifier to the cli
 - `logger`: set the minimal printed mode of logs from `debug`, `info`, `error`
 
@@ -140,25 +140,25 @@ cli.addCommand("commandName", "Command description", (args, callback) => {
 - `.addCommand(commandWord, commandDescription, callback)`: add an shell command to the CLI defined be the commandWord. Callback will receive 2 parameters: (args, endCommand): the arguments passed to the command and a callback to execute at the end of the command.
 
 #### CLI Default commands
-- `parameters`: get the list of connected workers on the server
+- `parameters`: set the values of global parameters. Values are kept locally on the CLI until --save is used.
     - Options:
-        - `-r, --reload`: erase and reload the current parameters from the server
-        - `-s, --save`: save parameters value on the server now
-- `subscribe`: subscribe to the server (implicitly worker) events
-- `unsubscribe`: unubscribe to the server (implicitly worker) events
-- `workers [clientId]`: get the list of connected workers on the server
+        - `-r, --reload`: erase local and reload the current parameters from the server
+        - `-s, --save`: save parameters value on the server 
+- `subscribe`: subscribe to the server (implicitly worker) events (result, errors)
+- `unsubscribe`: unsubscribe to the server (implicitly worker) events (result, errors)
+- `workers [token]`: get the list of connected workers on the server
     - Options:
-        - `[clientId]`: set a specific worker's clientId to get
-- `clis [clientId]`: get the list of connected CLIs on the server
+        - `[token]`: set a specific worker's token to get
+- `clis [token]`: get the list of connected CLIs on the server
     - Options:
-        - `[clientId]`: set a specific cli's clientId to get
-- `launch [clientId]`: start all the tasks on the connected workers
+        - `[token]`: set a specific cli's token to get
+- `launch [token]`: start all the tasks on the connected workers
     - Options:
-        - `[clientId]`: set a specific worker's clientId to launch   
+        - `[token]`: set a specific worker's token to launch   
         - `-f, --force`: force sending start even if it's already launched
-- `stop [clientId]`: stop all the tasks on the connected workers
+- `stop [token]`: stop all the tasks on the connected workers
     - Options:
-        - `[clientId]`: set a specific worker's clientId to stop 
+        - `[token]`: set a specific worker's token to stop 
         - `-f, --force`: force sending stop even if it's already stopped
 
 ## Referencies
