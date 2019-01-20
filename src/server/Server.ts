@@ -601,6 +601,18 @@ export class Server {
     }
 
     /**
+     * Get a particular parameter by key
+     * @param {string} key
+     * @returns {GlobalParameter<any> | false}
+     */
+    public getGlobalParameter(key: string){
+        if (this.globalParameters.hasOwnProperty(key)) {
+            return this.globalParameters[key];
+        }
+        return false;
+    }
+
+    /**
      * Add custom server RPC method callable from clients
      * @param {string} name
      * @param {Function} callback

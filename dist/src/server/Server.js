@@ -332,6 +332,12 @@ class Server {
     addGlobalParameter(key, defaultValue, value = null) {
         this.globalParameters[key] = (new GlobalParameter_1.GlobalParameter(key, defaultValue, value));
     }
+    getGlobalParameter(key) {
+        if (this.globalParameters.hasOwnProperty(key)) {
+            return this.globalParameters[key];
+        }
+        return false;
+    }
     addServerAction(name, callback) {
         this.server.exports[name] = callback;
     }

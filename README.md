@@ -53,6 +53,7 @@ server.connect();
 - `.onTaskEvent(eventName, callback)`: add an action when a specific event is sent by a worker. Callback will receive 3 parameters: (data, clientIdentifier, workerProxy)
 
 - `.addGlobalParameter(parameterKey, defaultValue)`: add a parameter that will be sent to all workers at task launch. To set a parameter value at runtime, use the command `parameters` on CLI and follow the instructions.
+- `.getGlobalParameter(key)`: get a specific parameter object (of type GlobalParameter)
 - `.addServerAction(name, callback)`: add a method to the server that will be callable by any clients (workers / cli) using server.{methodName}(anyParameters). Callback can have any desired parameters
 - `.declareWorkerTask(name)`: declare an custom method on the worker that will be callable by the server.
 
