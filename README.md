@@ -157,10 +157,12 @@ cli.addCommand("commandName", "Command description", (args, callback) => {
     - Options:
         - `[token]`: set a specific worker's token to launch   
         - `-f, --force`: force sending start even if it's already launched
+        - `-l, --limit <amount>`: restrict to a certain amount of workers
 - `stop [token]`: stop all the tasks on the connected workers
     - Options:
         - `[token]`: set a specific worker's token to stop 
         - `-f, --force`: force sending stop even if it's already stopped
+        - `-l, --limit <amount>`: restrict to a certain amount of workers
 
 ## Referencies
 

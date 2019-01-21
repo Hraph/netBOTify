@@ -320,9 +320,9 @@ export class Server {
              * Launch a task on all workers or specified workers' client id
              * @param {GlobalParameterList} parameters
              * @param token: Specific token filter
-             * @param {boolean} forceLaunch: Launch task even if the task status is already launched
+             * @param {object} args: Specific arguments
              */
-            launchTask: function (parameters: GlobalParameterList = {}, token: any = null, forceLaunch: boolean = false) {
+            launchTask: function (parameters: GlobalParameterList = {}, token: any = null, args: {force: boolean, limit: number}) {
                 let clientPromises: any[] = [];
                 let context = this;
                 context.async = true; //Define an asynchronous return
@@ -330,14 +330,16 @@ export class Server {
                 __this._saveTaskParameters(parameters); //Save parameters
 
                 let total = 0;
+                let totalPromised = 0;
                 let errors = 0;
                 let success = 0;
+                let limit = (typeof args.limit != "undefined") ? args.limit : 0; // Set limit for unlimited
 
                 __this.clients.filter(client => {
                         // Custom filter if token parameter is set and Worker
                     return (token !== null) ? (client.clientType == ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientType.Worker);
                 }).forEach(client => { // Get Workers clients ONLY
-                    if (forceLaunch || client.taskStatus != TaskStatus.Running) { // Launch task only if task is not currently running
+                    if ((totalPromised < limit || limit == 0) && ((typeof args.force != "undefined" && args.force) || client.taskStatus != TaskStatus.Running)) { // Launch task only if task is not currently running and limit is set and not reached
 
                         // Check if getIdentity callback promise has been set
                         if (__this.identityCallback != null) {
@@ -361,6 +363,8 @@ export class Server {
                         else {
                             clientPromises.push(__this.server.getClient(client.clientId).launchTask(null, __this.globalParameters).then(() => ++success)); // Launch task without identity
                         }
+
+                        ++totalPromised;
                     }
 
                     ++total;
@@ -381,21 +385,23 @@ export class Server {
             /**
              * Stop a task on all workers or specified workers' client id
              * @param token: Specific token filter
-             * @param {boolean} forceStop: Stop the task even if the task status is already stopped
+             * @param {object} args: Specific arguments
              */
-            stopTask: function (token: any = null, forceStop: boolean = false) {
+            stopTask: function (token: any = null, args: {force: boolean, limit: number}) {
                 let clientPromises: any[] = [];
                 let context = this;
                 context.async = true; // Define an asynchronous return
 
                 let total = 0;
+                let totalPromised = 0;
                 let errors = 0;
+                let limit = (typeof args.limit != "undefined") ? args.limit : 0; // Set limit for unlimited
 
                 __this.clients.filter(client => {
                         // Custom filter if token parameter is set
                         return (token !== null) ? (client.clientType == ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientType.Worker);
                     }).forEach(client => { // Get Workers clients ONLY
-                        if (forceStop || client.taskStatus != TaskStatus.Idle) { // Stop task only if task is not currently stopped
+                        if ((totalPromised < limit || limit == 0) && ((typeof args.force != "undefined" && args.force) || client.taskStatus != TaskStatus.Idle)){ // Stop task only if task is not currently stopped and limit is set and not reached
                             clientPromises.push(
                                 __this.server.getClient(client.clientId).stopTask()
                                     .catch((e: any) => { // Catch directly error
@@ -403,6 +409,7 @@ export class Server {
                                         ++errors; // Increments errors
                                     })
                             ); //Stop task
+                            ++totalPromised;
                         }
 
                     ++total;

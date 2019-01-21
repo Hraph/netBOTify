@@ -167,18 +167,20 @@ class Server {
             saveGlobalParameters: function (parameters = {}) {
                 __this._saveTaskParameters(parameters);
             },
-            launchTask: function (parameters = {}, token = null, forceLaunch = false) {
+            launchTask: function (parameters = {}, token = null, args) {
                 let clientPromises = [];
                 let context = this;
                 context.async = true;
                 __this._saveTaskParameters(parameters);
                 let total = 0;
+                let totalPromised = 0;
                 let errors = 0;
                 let success = 0;
+                let limit = (typeof args.limit != "undefined") ? args.limit : 0;
                 __this.clients.filter(client => {
                     return (token !== null) ? (client.clientType == ClientIdentifier_1.ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientIdentifier_1.ClientType.Worker);
                 }).forEach(client => {
-                    if (forceLaunch || client.taskStatus != ClientIdentifier_1.TaskStatus.Running) {
+                    if ((totalPromised < limit || limit == 0) && ((typeof args.force != "undefined" && args.force) || client.taskStatus != ClientIdentifier_1.TaskStatus.Running)) {
                         if (__this.identityCallback != null) {
                             clientPromises.push(__this.identityCallback().then((identity) => {
                                 let clientIdentifier = __this.clients.find(x => x.clientId == client.clientId);
@@ -193,6 +195,7 @@ class Server {
                         else {
                             clientPromises.push(__this.server.getClient(client.clientId).launchTask(null, __this.globalParameters).then(() => ++success));
                         }
+                        ++totalPromised;
                     }
                     ++total;
                 });
@@ -208,21 +211,24 @@ class Server {
                     });
                 });
             },
-            stopTask: function (token = null, forceStop = false) {
+            stopTask: function (token = null, args) {
                 let clientPromises = [];
                 let context = this;
                 context.async = true;
                 let total = 0;
+                let totalPromised = 0;
                 let errors = 0;
+                let limit = (typeof args.limit != "undefined") ? args.limit : 0;
                 __this.clients.filter(client => {
                     return (token !== null) ? (client.clientType == ClientIdentifier_1.ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientIdentifier_1.ClientType.Worker);
                 }).forEach(client => {
-                    if (forceStop || client.taskStatus != ClientIdentifier_1.TaskStatus.Idle) {
+                    if ((totalPromised < limit || limit == 0) && ((typeof args.force != "undefined" && args.force) || client.taskStatus != ClientIdentifier_1.TaskStatus.Idle)) {
                         clientPromises.push(__this.server.getClient(client.clientId).stopTask()
                             .catch((e) => {
                             logger_1.logger.server().error("Unable to stop task ", e);
                             ++errors;
                         }));
+                        ++totalPromised;
                     }
                     ++total;
                 });

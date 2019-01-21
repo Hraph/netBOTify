@@ -55,6 +55,7 @@ class RemoteCLI extends Client_1.Client {
             vorpal
                 .command('launch [token]', 'Launch the task on workers.')
                 .option('-f, --force', "Force sending start even if it's already launched")
+                .option('-l, --limit <amount>', 'Restrict to a certain amount of workers')
                 .action(function (args, callback) {
                 let setParametersCommandPromise = [];
                 if (__this.globalParameters == null) {
@@ -72,7 +73,7 @@ class RemoteCLI extends Client_1.Client {
                         if (!result.continue)
                             callback();
                         else
-                            __this._executeDistantCommand("launchTask", __this.globalParameters, args.token, args.options.force)
+                            __this._executeDistantCommand("launchTask", __this.globalParameters, args.token, args.options)
                                 .then((result) => {
                                 vorpal.log("%d worker's task launched of %d worker%s. %d error%s", result.success, result.total, (result.total >= 2) ? "s" : "", result.errors, (result.errors >= 2) ? "s" : "");
                                 callback();
@@ -84,6 +85,7 @@ class RemoteCLI extends Client_1.Client {
             vorpal
                 .command('stop [token]', 'Stop the task on workers.')
                 .option('-f, --force', "Force sending stop even if it's already stopped")
+                .option('-l, --limit <amount>', 'Restrict to a certain amount of workers')
                 .action(function (args, callback) {
                 return this.prompt({
                     type: 'confirm',
@@ -94,7 +96,7 @@ class RemoteCLI extends Client_1.Client {
                     if (!result.continue)
                         callback();
                     else
-                        __this._executeDistantCommand("stopTask", args.token, args.options.force)
+                        __this._executeDistantCommand("stopTask", args.token, args.options)
                             .then((result) => {
                             vorpal.log("%d worker's task stopped of %d worker%s. %d error%s", result.success, result.total, (result.total >= 2) ? "s" : "", result.errors, (result.errors >= 2) ? "s" : "");
                             callback();
