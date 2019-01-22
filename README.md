@@ -150,9 +150,13 @@ cli.addCommand("commandName", "Command description", (args, callback) => {
 - `workers [token]`: get the list of connected workers on the server
     - Options:
         - `[token]`: set a specific worker's token to get
+        - `-w, --where`: find a certain value of a property
+        - `-g, --groupby`: group result by a property
 - `clis [token]`: get the list of connected CLIs on the server
     - Options:
         - `[token]`: set a specific cli's token to get
+        - `-w, --where`: find a certain value of a property
+        - `-g, --groupby`: group result by a property
 - `launch [token]`: start all the tasks on the connected workers
     - Options:
         - `[token]`: set a specific worker's token to launch   

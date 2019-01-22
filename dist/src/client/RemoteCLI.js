@@ -124,11 +124,37 @@ class RemoteCLI extends Client_1.Client {
             });
             vorpal
                 .command('workers [token]', 'Get server connected workers.')
+                .option('-w, --where <filter>', 'Find a certain value of a property')
+                .option('-g, --groupby <property>', 'Group result by a property')
                 .action((args, callback) => {
                 __this._executeDistantCommand("getWorkers", args.token)
                     .then((result) => {
+                    if (typeof args.options.where != "undefined") {
+                        if (!args.options.where.includes("=")) {
+                            vorpal.log("Invalid where filter");
+                        }
+                        else {
+                            let where = args.options.where.split("=");
+                            let key = where[0].trim();
+                            let filter = where[1].replace(/'/gi, "").trim();
+                            result = result.filter((x) => x[key] == filter);
+                        }
+                    }
                     vorpal.log(result.length + " workers");
-                    if (result.length > 0)
+                    if (typeof args.options.groupby != "undefined") {
+                        let gbResult = __this._objectGroupByProperty(result, args.options.groupby);
+                        if (Object.keys(gbResult).length > 0) {
+                            let gbResultReduced = [];
+                            Object.keys(gbResult).forEach(x => {
+                                let obj = {};
+                                obj[args.options.groupby] = x;
+                                obj["values"] = gbResult[x].length,
+                                    gbResultReduced.push(obj);
+                            });
+                            vorpal.log(cTable.getTable(gbResultReduced));
+                        }
+                    }
+                    else if (result.length > 0)
                         vorpal.log(cTable.getTable(result));
                     callback();
                 })
@@ -136,11 +162,37 @@ class RemoteCLI extends Client_1.Client {
             });
             vorpal
                 .command('clis [token]', 'Get server connected CLIs.')
+                .option('-w, --where <filter>', 'Find a certain value of a property')
+                .option('-g, --groupby <property>', 'Group result by a property')
                 .action((args, callback) => {
                 __this._executeDistantCommand("getCLIs", args.token)
                     .then((result) => {
+                    if (typeof args.options.where != "undefined") {
+                        if (!args.options.where.includes("=")) {
+                            vorpal.log("Invalid where filter");
+                        }
+                        else {
+                            let where = args.options.where.split("=");
+                            let key = where[0].trim();
+                            let filter = where[1].replace(/'/gi, "").trim();
+                            result = result.filter((x) => x[key] == filter);
+                        }
+                    }
                     vorpal.log(result.length + " CLIs");
-                    if (result.length > 0)
+                    if (typeof args.options.groupby != "undefined") {
+                        let gbResult = __this._objectGroupByProperty(result, args.options.groupby);
+                        if (Object.keys(gbResult).length > 0) {
+                            let gbResultReduced = [];
+                            Object.keys(gbResult).forEach(x => {
+                                let obj = {};
+                                obj[args.options.groupby] = x;
+                                obj["values"] = gbResult[x].length,
+                                    gbResultReduced.push(obj);
+                            });
+                            vorpal.log(cTable.getTable(gbResultReduced));
+                        }
+                    }
+                    else if (result.length > 0)
                         vorpal.log(cTable.getTable(result));
                     callback();
                 })
@@ -229,6 +281,12 @@ class RemoteCLI extends Client_1.Client {
                 reject(e);
             }
         });
+    }
+    _objectGroupByProperty(obj, prop) {
+        return obj.reduce(function (rv, x) {
+            (rv[x[prop]] = rv[x[prop]] || []).push(x);
+            return rv;
+        }, {});
     }
     _serverInvalidCommandError(e) {
         logger_1.logger.cli().error("Error in command ", e);
