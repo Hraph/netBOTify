@@ -126,10 +126,11 @@ class RemoteCLI extends Client_1.Client {
                 .command('workers [token]', 'Get server connected workers.')
                 .option('-w, --where <filter>', 'Find a certain value of a property')
                 .option('-g, --groupby <property>', 'Group result by a property')
+                .option('-c, --count', 'Count only')
                 .action((args, callback) => {
                 __this._executeDistantCommand("getWorkers", args.token)
                     .then((result) => {
-                    if (typeof args.options.where != "undefined") {
+                    if (args.options.where) {
                         if (!args.options.where.includes("=")) {
                             vorpal.log("Invalid where filter");
                         }
@@ -141,7 +142,7 @@ class RemoteCLI extends Client_1.Client {
                         }
                     }
                     vorpal.log(result.length + " workers");
-                    if (typeof args.options.groupby != "undefined") {
+                    if (!args.options.count && args.options.groupby) {
                         let gbResult = __this._objectGroupByProperty(result, args.options.groupby);
                         if (Object.keys(gbResult).length > 0) {
                             let gbResultReduced = [];
@@ -154,7 +155,7 @@ class RemoteCLI extends Client_1.Client {
                             vorpal.log(cTable.getTable(gbResultReduced));
                         }
                     }
-                    else if (result.length > 0)
+                    else if (!args.options.count && result.length > 0)
                         vorpal.log(cTable.getTable(result));
                     callback();
                 })
@@ -164,10 +165,11 @@ class RemoteCLI extends Client_1.Client {
                 .command('clis [token]', 'Get server connected CLIs.')
                 .option('-w, --where <filter>', 'Find a certain value of a property')
                 .option('-g, --groupby <property>', 'Group result by a property')
+                .option('-c, --count', 'Count only')
                 .action((args, callback) => {
                 __this._executeDistantCommand("getCLIs", args.token)
                     .then((result) => {
-                    if (typeof args.options.where != "undefined") {
+                    if (args.options.where) {
                         if (!args.options.where.includes("=")) {
                             vorpal.log("Invalid where filter");
                         }
@@ -179,7 +181,7 @@ class RemoteCLI extends Client_1.Client {
                         }
                     }
                     vorpal.log(result.length + " CLIs");
-                    if (typeof args.options.groupby != "undefined") {
+                    if (!args.options.count && args.options.groupby) {
                         let gbResult = __this._objectGroupByProperty(result, args.options.groupby);
                         if (Object.keys(gbResult).length > 0) {
                             let gbResultReduced = [];
@@ -192,7 +194,7 @@ class RemoteCLI extends Client_1.Client {
                             vorpal.log(cTable.getTable(gbResultReduced));
                         }
                     }
-                    else if (result.length > 0)
+                    else if (!args.options.count && result.length > 0)
                         vorpal.log(cTable.getTable(result));
                     callback();
                 })

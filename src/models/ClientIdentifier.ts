@@ -31,12 +31,12 @@ export class ClientIdentifier {
     }
 
     /**
-     * Generate unique key
+     * Generate unique key of 8 char
      * @returns {string}
      * @private
      */
     private _generateHash(){
-        return Math.random().toString(36).substring(2, 15);
+        return Math.random().toString(36).substring(2, 10);
     }
 
     /**
