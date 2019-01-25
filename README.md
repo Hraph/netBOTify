@@ -164,6 +164,11 @@ cli.addCommand("commandName", "Command description", (args, callback) => {
         - `-w, --where <property>=<value>`: find a certain value of a property
         - `-g, --groupby <property>`: group result by a property
         - `-c, --count`: count only
+- `status [token]`: get the status of connected workers on the server
+    - Options:
+        - `[token]`: set a specific cli's token to get
+        - `-w, --where <property>=<value>`: find a certain value of a property
+        - `-g, --groupby <property>`: group result by a property
 - `launch [token]`: start all the tasks on the connected workers
     - Options:
         - `[token]`: set a specific worker's token to launch   
