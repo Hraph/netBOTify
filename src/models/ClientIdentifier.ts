@@ -24,6 +24,7 @@ export class ClientIdentifier {
     public ip: any = null;
     public reconnect: number = 0;
     public identity?: WorkerIdentity;
+    [key: string]: any;
 
     constructor(groupId: string, instanceId: string) {
         this.groupId = groupId;

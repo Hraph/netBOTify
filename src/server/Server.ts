@@ -340,7 +340,7 @@ export class Server {
              * @param token: Specific token filter
              * @param {object} args: Specific arguments
              */
-            launchTask: function (parameters: GlobalParameterList = {}, token: any = null, args: {force: boolean, limit: number}) {
+            launchTask: function (parameters: GlobalParameterList = {}, token: any = null, args: {force: boolean, limit: number, where: string}) {
                 let clientPromises: any[] = [];
                 let context = this;
                 context.async = true; //Define an asynchronous return
@@ -352,10 +352,22 @@ export class Server {
                 let errors = 0;
                 let success = 0;
                 let limit = (typeof args.limit != "undefined") ? args.limit : 0; // Set limit for unlimited
+                let whereKey: string;
+                let whereFilter: string;
+
+                // Process where
+                if (args.where != null && args.where.includes("=")) {
+                    let where: any = args.where.split("=");
+                    whereKey = where[0].trim();
+                    whereFilter = where[1].replace(/'/gi, "").trim(); // filter is surrounded with quotes involuntary by vorpal
+                }
 
                 __this.clients.filter(client => {
                         // Custom filter if token parameter is set and Worker
                     return (token !== null) ? (client.clientType == ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientType.Worker);
+                }).filter(client => {
+                    // Process where
+                    return (whereKey != null && whereFilter != null) ? client[whereKey] == whereFilter : true;
                 }).forEach(client => { // Get Workers clients ONLY
                     if ((totalPromised < limit || limit == 0) && ((typeof args.force != "undefined" && args.force) || client.taskStatus == TaskStatus.Idle)) { // Launch task only if task is currently stopped and limit is set and not reached
 
@@ -405,7 +417,7 @@ export class Server {
              * @param token: Specific token filter
              * @param {object} args: Specific arguments
              */
-            stopTask: function (token: any = null, args: {force: boolean, limit: number}) {
+            stopTask: function (token: any = null, args: {force: boolean, limit: number, where: string}) {
                 let clientPromises: any[] = [];
                 let context = this;
                 context.async = true; // Define an asynchronous return
@@ -414,10 +426,22 @@ export class Server {
                 let totalPromised = 0;
                 let errors = 0;
                 let limit = (typeof args.limit != "undefined") ? args.limit : 0; // Set limit for unlimited
+                let whereKey: string;
+                let whereFilter: string;
+
+                // Process where
+                if (args.where != null && args.where.includes("=")) {
+                    let where: any = args.where.split("=");
+                    whereKey = where[0].trim();
+                    whereFilter = where[1].replace(/'/gi, "").trim(); // filter is surrounded with quotes involuntary by vorpal
+                }
 
                 __this.clients.filter(client => {
                         // Custom filter if token parameter is set
                         return (token !== null) ? (client.clientType == ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientType.Worker);
+                    }).filter(client => {
+                        // Process where
+                        return (whereKey != null && whereFilter != null) ? client[whereKey] == whereFilter : true;
                     }).forEach(client => { // Get Workers clients ONLY
                         if ((totalPromised < limit || limit == 0) && ((typeof args.force != "undefined" && args.force) || client.taskStatus != TaskStatus.Idle)){ // Stop task only if task is not currently stopped and limit is set and not reached
                             clientPromises.push(

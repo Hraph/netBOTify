@@ -108,6 +108,7 @@ export class RemoteCLI extends Client {
                 .command('launch [token]', 'Launch the task on workers.')
                 .option('-f, --force', "Force sending start even if it's already launched")
                 .option('-l, --limit <amount>', 'Restrict to a certain amount of workers')
+                .option('-w, --where <filter>', 'Find a certain value of a property')
                 .action(function(args: any, callback: Function) {
                     let setParametersCommandPromise = [];
                     
@@ -122,6 +123,14 @@ export class RemoteCLI extends Client {
                     
                     //Parameters has been set
                     Promise.all(setParametersCommandPromise).then(() => {
+                        // Process where
+                        if (args.options.where != null) {
+                            vorpal.log("Caution: custom filter is used!");
+
+                            if (!args.options.where.includes("=")) {
+                                vorpal.log("Invalid where filter");
+                            }
+                        }
 
                         // Ask for confirmation
                         //@ts-ignore
@@ -152,7 +161,16 @@ export class RemoteCLI extends Client {
                 .command('stop [token]', 'Stop the task on workers.')
                 .option('-f, --force', "Force sending stop even if it's already stopped")
                 .option('-l, --limit <amount>', 'Restrict to a certain amount of workers')
+                .option('-w, --where <filter>', 'Find a certain value of a property')
                 .action(function(args: any, callback: Function) {
+                    // Process where
+                    if (args.options.where != null) {
+                        vorpal.log("Caution: custom filter is used!");
+
+                        if (!args.options.where.includes("=")) {
+                            vorpal.log("Invalid where filter");
+                        }
+                    }
 
                     // Ask for confirmation
                     //@ts-ignore

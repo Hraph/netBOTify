@@ -21,6 +21,7 @@ export declare class ClientIdentifier {
     ip: any;
     reconnect: number;
     identity?: WorkerIdentity;
+    [key: string]: any;
     constructor(groupId: string, instanceId: string);
     private _generateHash;
     getWorkerIdentity(): WorkerIdentity | undefined;

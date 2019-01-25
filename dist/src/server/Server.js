@@ -186,8 +186,17 @@ class Server {
                 let errors = 0;
                 let success = 0;
                 let limit = (typeof args.limit != "undefined") ? args.limit : 0;
+                let whereKey;
+                let whereFilter;
+                if (args.where != null && args.where.includes("=")) {
+                    let where = args.where.split("=");
+                    whereKey = where[0].trim();
+                    whereFilter = where[1].replace(/'/gi, "").trim();
+                }
                 __this.clients.filter(client => {
                     return (token !== null) ? (client.clientType == ClientIdentifier_1.ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientIdentifier_1.ClientType.Worker);
+                }).filter(client => {
+                    return (whereKey != null && whereFilter != null) ? client[whereKey] == whereFilter : true;
                 }).forEach(client => {
                     if ((totalPromised < limit || limit == 0) && ((typeof args.force != "undefined" && args.force) || client.taskStatus == ClientIdentifier_1.TaskStatus.Idle)) {
                         if (__this.identityCallback != null) {
@@ -228,8 +237,17 @@ class Server {
                 let totalPromised = 0;
                 let errors = 0;
                 let limit = (typeof args.limit != "undefined") ? args.limit : 0;
+                let whereKey;
+                let whereFilter;
+                if (args.where != null && args.where.includes("=")) {
+                    let where = args.where.split("=");
+                    whereKey = where[0].trim();
+                    whereFilter = where[1].replace(/'/gi, "").trim();
+                }
                 __this.clients.filter(client => {
                     return (token !== null) ? (client.clientType == ClientIdentifier_1.ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientIdentifier_1.ClientType.Worker);
+                }).filter(client => {
+                    return (whereKey != null && whereFilter != null) ? client[whereKey] == whereFilter : true;
                 }).forEach(client => {
                     if ((totalPromised < limit || limit == 0) && ((typeof args.force != "undefined" && args.force) || client.taskStatus != ClientIdentifier_1.TaskStatus.Idle)) {
                         clientPromises.push(__this.server.getClient(client.clientId).stopTask()

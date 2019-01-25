@@ -3,6 +3,8 @@ export interface ServerStatusData {
     connectedWorkers: number;
     connectedClis: number;
     launchedTasks: number;
+    endedTasks: number;
+    errorTasks: number;
 }
 export declare class ServerStatus {
     static getServerStatusData(server: Server): ServerStatusData;
