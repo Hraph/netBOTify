@@ -61,6 +61,9 @@ class Client {
         this.config[name] = item;
         return this;
     }
+    getServerProxy() {
+        return this.server;
+    }
 }
 exports.Client = Client;
 //# sourceMappingURL=Client.js.map

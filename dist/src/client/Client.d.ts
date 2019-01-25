@@ -15,4 +15,5 @@ export declare class Client {
     protected stopPing(): void;
     connect(): void;
     addConfigItem(name: string, item: any): this;
+    getServerProxy(): any;
 }

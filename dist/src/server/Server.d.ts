@@ -20,7 +20,6 @@ export declare class Server {
     private _reduceObjectToAllowedKeys;
     private _internalActions;
     private _releaseWorkerIdentity;
-    private _sendEventToSubscribedCLIs;
     private _saveTaskParameters;
     private _saveWorkerLog;
     private _saveWorkerResult;
@@ -35,5 +34,7 @@ export declare class Server {
     declareWorkerTask(name: string): void;
     onWorkerGetIdentity(callback: GetIdentityCallback): void;
     onWorkerReleaseIdentity(callback: ReleaseIdentityCallback): void;
+    sendEventToSubscribedCLIs(eventName: string, data: any, workerToken: string): void;
+    sendEventToWorkers(eventName: string, data: any, token?: any): void;
     logger(): Logger;
 }

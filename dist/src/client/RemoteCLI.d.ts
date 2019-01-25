@@ -8,8 +8,12 @@ export declare class RemoteCLI extends Client {
     private _setupTaskParameters;
     private _getServerGlobalParameters;
     private _executeDistantCommand;
+    private _objectGroupByPropertyAndCount;
     private _objectGroupByProperty;
     private _serverInvalidCommandError;
-    addCommand(commandWord: string, commandDescription: string, callback: (args: any, endCommand: Function) => void): void;
+    addCommand(commandWord: string, commandDescription: string, callback: (args: any, endCommand: Function) => void, options?: [{
+        key: string;
+        description: string;
+    }]): void;
     logger(): Logger;
 }

@@ -20,4 +20,15 @@ worker.onStopTask((server) => {
     worker.sendTaskResult({ didier: "ok" });
     worker.sendTaskEnded();
 });
+worker.onServerEvent("workerSayHello", (data, server) => {
+    worker.logger().info("workerSayHello");
+    worker.sendTaskEvent("helloBack", "Hello");
+});
+worker.onStatusTask((server => {
+    worker.logger().debug("Get status");
+    return {
+        number: Math.random(),
+        token: identifier.token
+    };
+}));
 //# sourceMappingURL=worker.js.map

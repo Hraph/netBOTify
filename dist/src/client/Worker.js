@@ -61,7 +61,13 @@ class Worker extends Client_1.Client {
             __this.identifier.taskStatus = ClientIdentifier_1.TaskStatus.Idle;
         };
         this.client.exports.statusTask = function () {
-            __this.taskEvent.emit("statusTask", __this.server);
+            if (__this.onGetStatusCallback != null)
+                return __this.onGetStatusCallback(__this.server);
+            else
+                return null;
+        };
+        this.client.exports.workerOnEvent = function (eventName, data = null) {
+            __this.taskEvent.emit("serverEvent:" + eventName, __this.server, data);
         };
     }
     onLaunchTask(callback) {
@@ -71,7 +77,10 @@ class Worker extends Client_1.Client {
         this.taskEvent.on("stopTask", callback);
     }
     onStatusTask(callback) {
-        this.taskEvent.on("statusTask", callback);
+        this.onGetStatusCallback = callback;
+    }
+    onServerEvent(eventName, callback) {
+        this.taskEvent.on("serverEvent:" + eventName, callback);
     }
     sendTaskResult(result = null) {
         if (this.server !== null)

@@ -53,6 +53,30 @@ class RemoteCLI extends Client_1.Client {
                 });
             });
             vorpal
+                .command('status [token]', 'Get status from worker')
+                .option('-w, --where <filter>', 'Find a certain value of a property')
+                .option('-g, --groupby <property>', 'Group result by a property')
+                .action(function (args, callback) {
+                if (args.options.where != null) {
+                    vorpal.log("Caution: custom filter is used!");
+                    if (!args.options.where.includes("=")) {
+                        vorpal.log("Invalid where filter");
+                    }
+                }
+                __this._executeDistantCommand("statusTask", args.token, args.options)
+                    .then((result) => {
+                    if (result.statuses != null && result.statuses.length > 0) {
+                        if (args.options.groupby != null)
+                            vorpal.log(cTable.getTable(__this._objectGroupByPropertyAndCount(result.statuses, args.options.groupby)));
+                        else
+                            vorpal.log(cTable.getTable(result.statuses));
+                    }
+                    vorpal.log("got status of %d/%d worker%s. %d error%s", result.success, result.total, (result.total >= 2) ? "s" : "", result.errors, (result.errors >= 2) ? "s" : "");
+                    callback();
+                })
+                    .catch(__this._serverInvalidCommandError);
+            });
+            vorpal
                 .command('launch [token]', 'Launch the task on workers.')
                 .option('-f, --force', "Force sending start even if it's already launched")
                 .option('-l, --limit <amount>', 'Restrict to a certain amount of workers')
@@ -145,6 +169,7 @@ class RemoteCLI extends Client_1.Client {
                 __this._executeDistantCommand("getWorkers", args.token)
                     .then((result) => {
                     if (args.options.where) {
+                        vorpal.log("Caution: custom filter is used!");
                         if (!args.options.where.includes("=")) {
                             vorpal.log("Invalid where filter");
                         }
@@ -157,17 +182,7 @@ class RemoteCLI extends Client_1.Client {
                     }
                     vorpal.log(result.length + " workers");
                     if (!args.options.count && args.options.groupby) {
-                        let gbResult = __this._objectGroupByProperty(result, args.options.groupby);
-                        if (Object.keys(gbResult).length > 0) {
-                            let gbResultReduced = [];
-                            Object.keys(gbResult).forEach(x => {
-                                let obj = {};
-                                obj[args.options.groupby] = x;
-                                obj["values"] = gbResult[x].length,
-                                    gbResultReduced.push(obj);
-                            });
-                            vorpal.log(cTable.getTable(gbResultReduced));
-                        }
+                        vorpal.log(__this._objectGroupByPropertyAndCount(result, args.options.groupby));
                     }
                     else if (!args.options.count && result.length > 0)
                         vorpal.log(cTable.getTable(result));
@@ -184,6 +199,7 @@ class RemoteCLI extends Client_1.Client {
                 __this._executeDistantCommand("getCLIs", args.token)
                     .then((result) => {
                     if (args.options.where) {
+                        vorpal.log("Caution: custom filter is used!");
                         if (!args.options.where.includes("=")) {
                             vorpal.log("Invalid where filter");
                         }
@@ -196,17 +212,7 @@ class RemoteCLI extends Client_1.Client {
                     }
                     vorpal.log(result.length + " CLIs");
                     if (!args.options.count && args.options.groupby) {
-                        let gbResult = __this._objectGroupByProperty(result, args.options.groupby);
-                        if (Object.keys(gbResult).length > 0) {
-                            let gbResultReduced = [];
-                            Object.keys(gbResult).forEach(x => {
-                                let obj = {};
-                                obj[args.options.groupby] = x;
-                                obj["values"] = gbResult[x].length,
-                                    gbResultReduced.push(obj);
-                            });
-                            vorpal.log(cTable.getTable(gbResultReduced));
-                        }
+                        vorpal.log(__this._objectGroupByPropertyAndCount(result, args.options.groupby));
                     }
                     else if (!args.options.count && result.length > 0)
                         vorpal.log(cTable.getTable(result));
@@ -298,6 +304,20 @@ class RemoteCLI extends Client_1.Client {
             }
         });
     }
+    _objectGroupByPropertyAndCount(objectArray, prop) {
+        let gbResult = this._objectGroupByProperty(objectArray, prop);
+        if (Object.keys(gbResult).length > 0) {
+            let gbResultReduced = [];
+            Object.keys(gbResult).forEach(x => {
+                let obj = {};
+                obj[prop] = x;
+                obj["values"] = gbResult[x].length;
+                gbResultReduced.push(obj);
+            });
+            return gbResultReduced;
+        }
+        return [];
+    }
     _objectGroupByProperty(obj, prop) {
         return obj.reduce(function (rv, x) {
             (rv[x[prop]] = rv[x[prop]] || []).push(x);
@@ -307,12 +327,15 @@ class RemoteCLI extends Client_1.Client {
     _serverInvalidCommandError(e) {
         logger_1.logger.cli().error("Error in command ", e);
     }
-    addCommand(commandWord, commandDescription, callback) {
-        vorpal
+    addCommand(commandWord, commandDescription, callback, options) {
+        let command = vorpal
             .command(commandWord, commandDescription)
             .action((vorpalArgs, vorpalCallback) => {
             callback(vorpalArgs, vorpalCallback);
         });
+        if (options != null) {
+            options.forEach(x => (x.key != null && x.description != null) ? command.option(x.key, x.description) : null);
+        }
     }
     logger() {
         return logger_1.logger.cli();
