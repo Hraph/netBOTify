@@ -108,8 +108,15 @@ export class Worker extends Client {
          */
         this.client.exports.statusTask = function() {
             //this.serverProxy is injected by eureca
-            //TODO: implement
             __this.taskEvent.emit("statusTask", __this.server);
+        };
+
+        /**
+         * Action on custom event from the server
+         */
+        this.client.exports.workerOnEvent = function(eventName: string, data: any = null) {
+            //this.serverProxy is injected by eureca
+            __this.taskEvent.emit("serverEvent:" + eventName, __this.server, data);
         };
     }
 
@@ -135,6 +142,15 @@ export class Worker extends Client {
      */
     public onStatusTask(callback: (server: any) => void){
         this.taskEvent.on("statusTask", callback);
+    }
+
+    /**
+     * Add handler on custom server event
+     * @param {string} eventName
+     * @param data
+     */
+    public onServerEvent(eventName: string, callback: (data: any, server: any) => any){
+        this.taskEvent.on("serverEvent:" + eventName, callback);
     }
 
     /**

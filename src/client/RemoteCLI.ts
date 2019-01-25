@@ -473,12 +473,16 @@ export class RemoteCLI extends Client {
      * @param {string} commandDescription
      * @param {(args: any, endCommand: Function) => void} callback
      */
-    public addCommand(commandWord: string, commandDescription: string, callback: (args: any, endCommand: Function) => void){
-        vorpal
+    public addCommand(commandWord: string, commandDescription: string, callback: (args: any, endCommand: Function) => void, options?: [{key: string, description: string}]){
+        let command = vorpal
             .command(commandWord, commandDescription)
             .action((vorpalArgs: any, vorpalCallback: Function) => {
                 callback(vorpalArgs, vorpalCallback);
             });
+
+        if (options != null){
+            options.forEach(x => (x.key != null && x.description != null) ? command.option(x.key, x.description) : null); // Apply options
+        }
     }
 
     /**

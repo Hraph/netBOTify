@@ -75,7 +75,7 @@ export class Server {
                     next();
                 },
                 prefix: "nbfy",
-                allow: ["launchTask", "stopTask", "statusTask", "CLIOnEvent"]
+                allow: ["launchTask", "stopTask", "statusTask", "workerOnEvent", "CLIOnEvent"]
             });
             this.server.attach(webServer);
     
@@ -196,7 +196,7 @@ export class Server {
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
                     __this.serverEvent.emit("taskResult", result, client, workerProxy);
 
-                    __this._sendEventToSubscribedCLIs("taskResult", result, client.token); //Send task event to subscribed CLIS
+                    __this.sendEventToSubscribedCLIs("taskResult", result, client.token); //Send task event to subscribed CLIS
                     __this._saveWorkerResult(client, result); //Save to log
                 });
 
@@ -214,7 +214,7 @@ export class Server {
                     __this.serverEvent.emit("taskError", error, client, workerProxy);
 
                     client.taskStatus = TaskStatus.Error;
-                    __this._sendEventToSubscribedCLIs("taskError", error, client.token); //Send task event to subscribed CLIS
+                    __this.sendEventToSubscribedCLIs("taskError", error, client.token); //Send task event to subscribed CLIS
                     __this._saveWorkerLog(client, "taskError", "STOPPED"); //Save to log
                 });
 
@@ -333,6 +333,15 @@ export class Server {
              */
             saveGlobalParameters: function(parameters: GlobalParameterList = {}) {
                 __this._saveTaskParameters(parameters); //Save parameters
+            },
+            /**
+             * Send a custom event to all connected workers or a specific one
+             * @param {string} eventName
+             * @param data
+             * @param token specific token
+             */
+            sendEventToWorkers: function(eventName: string, data: any, token: any = null){
+                return __this.sendEventToWorkers(eventName, data, token);
             },
             /**
              * Launch a task on all workers or specified workers' client id
@@ -486,20 +495,6 @@ export class Server {
     }
 
     /**
-     * Forward an event to all the subscribed CLIs
-     * @param {string} eventName: The name of the event
-     * @param data: Optional parameters
-     * @param {string} token: The token of the origin worker
-     * @private
-     */
-    private _sendEventToSubscribedCLIs(eventName: string, data: any = null, token: string){
-        this.clients.filter(client => (client.clientType == ClientType.RemoteCLI && this.subscribedCLISToEvents.indexOf(client.token) !== -1)) //Get subscribed clients wich are CLIS
-                    .forEach(client => { 
-            this.server.getClient(client.clientId).CLIOnEvent(eventName, data, token); //Send event
-        });
-    }
-
-    /**
      * Save the parameters for the next launch
      * @param {GlobalParameterList} parameters
      * @private
@@ -534,7 +529,7 @@ export class Server {
             
             function processErr(err: any){
                 logger.server().error('Unable to save log: ', err);
-                __this._sendEventToSubscribedCLIs("saveLogError", "Save log error " + err, client.token);
+                __this.sendEventToSubscribedCLIs("saveLogError", "Save log error " + err, client.token);
             }
             
             //Create directory if not exists and write to file
@@ -559,7 +554,7 @@ export class Server {
 
             function processErr(err: any){
                 logger.server().error('Unable to save result: ', err);
-                __this._sendEventToSubscribedCLIs("saveResultError", "Save log result " + err, client.token);
+                __this.sendEventToSubscribedCLIs("saveResultError", "Save log result " + err, client.token);
             }
             
             //Create directory if not exists and write to file
@@ -585,7 +580,7 @@ export class Server {
             
             function processErr(err: any){
                 logger.server().error('Unable to save image: ', err);
-                __this._sendEventToSubscribedCLIs("saveImageError", "Save image error " + err, client.token);
+                __this.sendEventToSubscribedCLIs("saveImageError", "Save image error " + err, client.token);
             }
             
             try {
@@ -692,6 +687,35 @@ export class Server {
      */
     public onWorkerReleaseIdentity(callback: ReleaseIdentityCallback){
         this.releaseIdentityCallback = callback;
+    }
+
+    /**
+     * Forward a custom event to all the subscribed CLIs
+     * @param {string} eventName: The name of the event
+     * @param data: Optional parameters
+     * @param {string} workerToken: The token of the origin worker
+     * @public
+     */
+    public sendEventToSubscribedCLIs(eventName: string, data: any = null, workerToken: string){
+        this.clients.filter(client => (client.clientType == ClientType.RemoteCLI && this.subscribedCLISToEvents.indexOf(client.token) !== -1)) //Get subscribed clients wich are CLIS
+            .forEach(client => {
+                this.server.getClient(client.clientId).CLIOnEvent(eventName, data, workerToken); //Send event
+            });
+    }
+
+    /**
+     * Send a custom event to all connected workers or a specific one
+     * @param {string} eventName
+     * @param data
+     * @param token specific token
+     */
+    public sendEventToWorkers(eventName: string, data: any, token: any = null){
+        this.clients.filter(client => {
+            // Custom filter if token parameter is set
+            return (token !== null) ? (client.clientType == ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientType.Worker)
+        }).forEach(client => {
+            this.server.getClient(client.clientId).workerOnEvent(eventName, data); // Send event
+        });
     }
 
     /**

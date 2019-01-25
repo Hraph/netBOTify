@@ -59,6 +59,10 @@ server.connect();
 
 - `.onWorkerGetIdentity(callback)`: add a callback called on worker launch to give a unique identity to the worker. Callback must return a Promise<WorkerIdentity> type.
 - `.onWorkerReleaseIdentity(callback)`: add a callback called on worker stop / disconnect to release a previously borrowed identity from a worker. The old promise is given to the callback parameters. Callback must return a Promise type.
+
+- `.sendEventToSubscribedCLIs(eventName, data, workerToken)`: forward a custom event to all the subscribed CLIs
+- `.sendEventToWorkers(eventName, data, token)`: send a custom event to all connected workers or a specific one
+
 ---
 ### 2. Worker (BOT) implementation <a id="worker"></a>
 
@@ -139,7 +143,7 @@ cli.addCommand("commandName", "Command description", (args, callback) => {
 
 #### CLI extra methods
 - `.connect()`: if autoConnect is set to false, connect manually to the server
-- `.addCommand(commandWord, commandDescription, callback)`: add an shell command to the CLI defined be the commandWord. Callback will receive 2 parameters: (args, endCommand): the arguments passed to the command and a callback to execute at the end of the command.
+- `.addCommand(commandWord, commandDescription, callback, options)`: add an shell command to the CLI defined be the commandWord. Callback will receive 3 parameters: (args, endCommand): the arguments passed to the command and a callback to execute at the end of the command. Options is an array of { key, description } objects.
 
 #### CLI Default commands
 - `parameters`: set the values of global parameters. Values are kept locally on the CLI until --save is used.
@@ -163,11 +167,13 @@ cli.addCommand("commandName", "Command description", (args, callback) => {
 - `launch [token]`: start all the tasks on the connected workers
     - Options:
         - `[token]`: set a specific worker's token to launch   
+        - `-w, --where <property>=<value>`: find a certain value of a property
         - `-f, --force`: force sending start even if it's already launched
         - `-l, --limit <amount>`: restrict to a certain amount of workers
 - `stop [token]`: stop all the tasks on the connected workers
     - Options:
         - `[token]`: set a specific worker's token to stop 
+        - `-w, --where <property>=<value>`: find a certain value of a property
         - `-f, --force`: force sending stop even if it's already stopped
         - `-l, --limit <amount>`: restrict to a certain amount of workers
 

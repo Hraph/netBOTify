@@ -115,4 +115,12 @@ export class Client {
         this.config[name] = item;
         return this;
     }
+
+    /**
+     * Return connected server proxy
+     * @returns {ClientIdentifier}
+     */
+    public getServerProxy(){
+        return this.server;
+    }
 }
