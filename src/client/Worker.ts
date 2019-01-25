@@ -13,6 +13,8 @@ declare var require: any;
 
 export class Worker extends Client {
     private taskEvent: any;
+    private onGetStatusCallback?: (server: any) => any;
+
     constructor(config: WorkerConfig = {}){
         super(config); //Create client
     
@@ -108,7 +110,10 @@ export class Worker extends Client {
          */
         this.client.exports.statusTask = function() {
             //this.serverProxy is injected by eureca
-            __this.taskEvent.emit("statusTask", __this.server);
+            if (__this.onGetStatusCallback !=  null)
+                return __this.onGetStatusCallback(__this.server);
+            else
+                return null;
         };
 
         /**
@@ -141,7 +146,7 @@ export class Worker extends Client {
      * @param {(server: any) => void} callback
      */
     public onStatusTask(callback: (server: any) => void){
-        this.taskEvent.on("statusTask", callback);
+        this.onGetStatusCallback = callback;
     }
 
     /**

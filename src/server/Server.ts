@@ -179,12 +179,6 @@ export class Server {
                 });
             },
             /**
-             * Result of the status task call of a worker
-             */
-            taskStatus: function (log: any) {
-                //TODO: implement
-            },
-            /**
              * Action when the worker task has found a result
              * Resend the result to all internal event subscribers
              * @param result
@@ -342,6 +336,62 @@ export class Server {
              */
             sendEventToWorkers: function(eventName: string, data: any, token: any = null){
                 return __this.sendEventToWorkers(eventName, data, token);
+            },
+            /**
+             * Get status from all workers
+             * @param token
+             * @param {{where: string}} args
+             */
+            statusTask: function (token: any = null, args: {where: string}){
+                let clientPromises: any[] = [];
+                let context = this;
+                context.async = true; //Define an asynchronous return
+
+                let total = 0;
+                let errors = 0;
+                let success = 0;
+                let statuses: any[] = [];
+                let whereKey: string;
+                let whereFilter: string;
+
+                // Process where
+                if (args.where != null && args.where.includes("=")) {
+                    let where: any = args.where.split("=");
+                    whereKey = where[0].trim();
+                    whereFilter = where[1].replace(/'/gi, "").trim(); // filter is surrounded with quotes involuntary by vorpal
+                }
+
+                __this.clients.filter(client => {
+                    // Custom filter if token parameter is set and Worker
+                    return (token !== null) ? (client.clientType == ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientType.Worker);
+                }).filter(client => {
+                    // Process where
+                    return (whereKey != null && whereFilter != null) ? client[whereKey] == whereFilter : true;
+                }).forEach(client => {
+                    clientPromises.push(__this.server.getClient(client.clientId).statusTask().then((status: any) => {
+                        if (status != null)
+                            statuses.push(status);
+                        ++success;
+                    }).catch((err: any) => {
+                        logger.server().error("Error while getting worker status", err);
+                        ++errors; // Increments errors
+                    }));
+
+                    ++total;
+                });
+
+                Promise.all(clientPromises).catch((e: any) => { // Wait all launches to finish
+                    logger.server().error("Error while getting worker status", e);
+                    ++errors; // Increments errors
+                    return []; // Return a value allowing the .then to be called
+                }).then((results: any) => { // Send success anyway even if failed
+                    context.return({
+                        statuses: statuses,
+                        success: success,
+                        total: total,
+                        errors: errors
+                    });
+                });
             },
             /**
              * Launch a task on all workers or specified workers' client id

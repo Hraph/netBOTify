@@ -100,6 +100,44 @@ export class RemoteCLI extends Client {
                         callback();
                     });
                 });
+
+            /**
+             * Task status command
+             */
+            vorpal
+                .command('status [token]', 'Get status from worker')
+                .option('-w, --where <filter>', 'Find a certain value of a property')
+                .option('-g, --groupby <property>', 'Group result by a property')
+                .action(function(args: any, callback: Function) {
+                    // Process where
+                    if (args.options.where != null) {
+                        vorpal.log("Caution: custom filter is used!");
+
+                        if (!args.options.where.includes("=")) {
+                            vorpal.log("Invalid where filter");
+                        }
+                    }
+
+                    __this._executeDistantCommand("statusTask", args.token, args.options)
+                        .then((result: any) => {
+                            if (result.statuses != null && result.statuses.length > 0) { // Has result
+
+                                // Process groubpy
+                                if (args.options.groupby != null)
+                                    vorpal.log(cTable.getTable(__this._objectGroupByPropertyAndCount(result.statuses, args.options.groupby)));
+
+                                else
+                                    vorpal.log(cTable.getTable(result.statuses));
+
+                            }
+
+                            vorpal.log("got status of %d/%d worker%s. %d error%s", result.success, result.total, (result.total >= 2) ? "s" : "", result.errors, (result.errors >= 2) ? "s" : "");
+                            callback();
+                        })
+                        .catch(__this._serverInvalidCommandError);
+
+
+                });
     
             /**
              * Launch task command
@@ -229,6 +267,8 @@ export class RemoteCLI extends Client {
                         .then((result: any) => {
                             // Process where
                             if (args.options.where){
+                                vorpal.log("Caution: custom filter is used!");
+
                                 if (!args.options.where.includes("=")) {
                                     vorpal.log("Invalid where filter");
                                 }
@@ -245,19 +285,7 @@ export class RemoteCLI extends Client {
 
                             // Process grouby
                             if (!args.options.count && args.options.groupby) {
-                                let gbResult = __this._objectGroupByProperty(result, args.options.groupby);
-
-                                if (Object.keys(gbResult).length > 0){ // Has result: format
-                                    let gbResultReduced: any = [];
-                                    
-                                    Object.keys(gbResult).forEach(x => { // Create value object
-                                        let obj: any = {};
-                                        obj[args.options.groupby] = x;
-                                        obj["values"] = gbResult[x].length,
-                                        gbResultReduced.push(obj);
-                                    });
-                                    vorpal.log(cTable.getTable(gbResultReduced));
-                                }
+                                vorpal.log(__this._objectGroupByPropertyAndCount(result, args.options.groupby));
                             }
                                 
                             else if (!args.options.count && result.length > 0) // No options
@@ -281,6 +309,8 @@ export class RemoteCLI extends Client {
                         .then((result: any) => {
                             // Process where
                             if (args.options.where){
+                                vorpal.log("Caution: custom filter is used!");
+
                                 if (!args.options.where.includes("=")) {
                                     vorpal.log("Invalid where filter");
                                 }
@@ -297,19 +327,7 @@ export class RemoteCLI extends Client {
                             
                             // Process grouby
                             if (!args.options.count && args.options.groupby) {
-                                let gbResult = __this._objectGroupByProperty(result, args.options.groupby);
-
-                                if (Object.keys(gbResult).length > 0){ // Has result: format
-                                    let gbResultReduced: any = [];
-                                    
-                                    Object.keys(gbResult).forEach(x => { // Create value object
-                                        let obj: any = {};
-                                        obj[args.options.groupby] = x;
-                                        obj["values"] = gbResult[x].length,
-                                        gbResultReduced.push(obj);
-                                    });
-                                    vorpal.log(cTable.getTable(gbResultReduced));
-                                }
+                                vorpal.log(__this._objectGroupByPropertyAndCount(result, args.options.groupby));
                             }
                                 
                             else if (!args.options.count && result.length > 0) // No options
@@ -450,7 +468,37 @@ export class RemoteCLI extends Client {
             }
         });
     }
-    
+
+    /**
+     * Group by an object array property and count occurrences
+     * @param {any[]} objectArray
+     * @param {string} prop
+     * @returns {any}
+     * @private
+     */
+    private _objectGroupByPropertyAndCount(objectArray: any[], prop: string){
+        let gbResult = this._objectGroupByProperty(objectArray, prop);
+
+        if (Object.keys(gbResult).length > 0){ // Has result: format
+            let gbResultReduced: any = [];
+
+            Object.keys(gbResult).forEach(x => { // Create value object
+                let obj: any = {};
+                obj[prop] = x;
+                obj["values"] = gbResult[x].length;
+                gbResultReduced.push(obj);
+            });
+            return gbResultReduced;
+        }
+        return [];
+    }
+
+    /**
+     * Return an objectArray grouped by a property
+     * @param obj
+     * @param {string} prop
+     * @private
+     */
     private _objectGroupByProperty(obj: any, prop: string){
         return obj.reduce(function(rv: any, x: any) {
             (rv[x[prop]] = rv[x[prop]] || []).push(x);
