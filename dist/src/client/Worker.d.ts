@@ -11,7 +11,7 @@ export declare class Worker extends Client {
     onLaunchTask(callback: (identity: WorkerIdentity, parameters: GlobalParameterList, server: any) => void): void;
     onStopTask(callback: (server: any) => void): void;
     onStatusTask(callback: (server: any) => Promise<any>): void;
-    onServerEvent(eventName: string, callback: (data: any, server: any) => any): void;
+    onServerEvent(eventName: string, callback: (server: any, data: any) => any): void;
     sendTaskResult(result?: any): void;
     sendTaskEvent(eventName: string, data?: any): void;
     sendTaskError(error?: any): void;

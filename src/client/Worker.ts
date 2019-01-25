@@ -157,7 +157,7 @@ export class Worker extends Client {
      * @param {string} eventName
      * @param data
      */
-    public onServerEvent(eventName: string, callback: (data: any, server: any) => any){
+    public onServerEvent(eventName: string, callback: (server: any, data: any) => any){
         this.taskEvent.on("serverEvent:" + eventName, callback);
     }
 

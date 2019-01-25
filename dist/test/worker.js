@@ -28,7 +28,7 @@ worker.onStopTask((server) => {
     worker.sendTaskResult({ didier: "ok" });
     worker.sendTaskEnded();
 });
-worker.onServerEvent("workerSayHello", (data, server) => {
+worker.onServerEvent("workerSayHello", (server, data) => {
     worker.logger().info("workerSayHello");
     worker.sendTaskEvent("helloBack", "Hello");
 });
