@@ -12,6 +12,7 @@ export declare class Worker extends Client {
     onStatusTask(callback: (server: any) => void): void;
     sendTaskResult(result?: any): void;
     sendTaskEvent(eventName: string, data?: any): void;
+    sendTaskError(error?: any): void;
     sendTaskEnded(data?: any): void;
     sendB64Image(fileName: string, extension: string, buffer: string): void;
     logger(): Logger;

@@ -9,7 +9,8 @@ var TaskStatus;
 (function (TaskStatus) {
     TaskStatus[TaskStatus["Idle"] = 0] = "Idle";
     TaskStatus[TaskStatus["Running"] = 1] = "Running";
-    TaskStatus[TaskStatus["Error"] = 2] = "Error";
+    TaskStatus[TaskStatus["Ended"] = 2] = "Ended";
+    TaskStatus[TaskStatus["Error"] = 3] = "Error";
 })(TaskStatus = exports.TaskStatus || (exports.TaskStatus = {}));
 class ClientIdentifier {
     constructor(groupId, instanceId) {

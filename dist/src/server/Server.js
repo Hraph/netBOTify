@@ -107,6 +107,15 @@ class Server {
                     __this._saveWorkerResult(client, result);
                 });
             },
+            taskError: function (error) {
+                let workerProxy = this.clientProxy;
+                __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
+                    __this.serverEvent.emit("taskError", error, client, workerProxy);
+                    client.taskStatus = ClientIdentifier_1.TaskStatus.Error;
+                    __this._sendEventToSubscribedCLIs("taskError", error, client.token);
+                    __this._saveWorkerLog(client, "taskError", "STOPPED");
+                });
+            },
             taskEvent: function (eventName, data = null) {
                 let workerProxy = this.clientProxy;
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
@@ -118,7 +127,7 @@ class Server {
                 let workerProxy = this.clientProxy;
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
                     __this.serverEvent.emit("taskEnded", data, client, workerProxy);
-                    client.taskStatus = ClientIdentifier_1.TaskStatus.Idle;
+                    client.taskStatus = ClientIdentifier_1.TaskStatus.Ended;
                     __this._saveWorkerLog(client, "taskStatus", "ENDED: " + data);
                     __this._releaseWorkerIdentity(client);
                 });
@@ -180,7 +189,7 @@ class Server {
                 __this.clients.filter(client => {
                     return (token !== null) ? (client.clientType == ClientIdentifier_1.ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientIdentifier_1.ClientType.Worker);
                 }).forEach(client => {
-                    if ((totalPromised < limit || limit == 0) && ((typeof args.force != "undefined" && args.force) || client.taskStatus != ClientIdentifier_1.TaskStatus.Running)) {
+                    if ((totalPromised < limit || limit == 0) && ((typeof args.force != "undefined" && args.force) || client.taskStatus == ClientIdentifier_1.TaskStatus.Idle)) {
                         if (__this.identityCallback != null) {
                             clientPromises.push(__this.identityCallback().then((identity) => {
                                 let clientIdentifier = __this.clients.find(x => x.clientId == client.clientId);

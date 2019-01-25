@@ -81,10 +81,15 @@ class Worker extends Client_1.Client {
         if (this.server !== null)
             this.server.task.taskEvent(eventName, data);
     }
+    sendTaskError(error = null) {
+        if (this.server !== null)
+            this.server.task.taskError(error);
+        this.identifier.taskStatus = ClientIdentifier_1.TaskStatus.Error;
+    }
     sendTaskEnded(data = null) {
         if (this.server !== null)
             this.server.task.taskEnded(data);
-        this.identifier.taskStatus = ClientIdentifier_1.TaskStatus.Idle;
+        this.identifier.taskStatus = ClientIdentifier_1.TaskStatus.Ended;
     }
     sendB64Image(fileName, extension, buffer) {
         if (this.server !== null)

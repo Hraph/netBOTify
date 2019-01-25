@@ -6,7 +6,8 @@ export declare enum ClientType {
 export declare enum TaskStatus {
     Idle = 0,
     Running = 1,
-    Error = 2
+    Ended = 2,
+    Error = 3
 }
 export declare class ClientIdentifier {
     clientType: ClientType;
