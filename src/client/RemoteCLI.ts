@@ -203,12 +203,48 @@ export class RemoteCLI extends Client {
              */
             vorpal
                 .command('workers [token]', 'Get server connected workers.')
+                .option('-w, --where <filter>', 'Find a certain value of a property')
+                .option('-g, --groupby <property>', 'Group result by a property')
+                .option('-c, --count', 'Count only')
                 .action((args: any, callback: Function) => {
                     __this._executeDistantCommand("getWorkers", args.token)
                         .then((result: any) => {
+                            // Process where
+                            if (args.options.where){
+                                if (!args.options.where.includes("=")) {
+                                    vorpal.log("Invalid where filter");
+                                }
+                                else {
+                                    let where: any = args.options.where.split("=");
+                                    let key: string = where[0].trim();
+                                    let filter: string = where[1].replace(/'/gi, "").trim(); // filter is surrounded with quotes involuntary by vorpal
+
+                                    result = result.filter((x: any) => x[key] == filter);
+                                }
+                            }
+                            
                             vorpal.log(result.length + " workers");
-                            if (result.length > 0)
+
+                            // Process grouby
+                            if (!args.options.count && args.options.groupby) {
+                                let gbResult = __this._objectGroupByProperty(result, args.options.groupby);
+
+                                if (Object.keys(gbResult).length > 0){ // Has result: format
+                                    let gbResultReduced: any = [];
+                                    
+                                    Object.keys(gbResult).forEach(x => { // Create value object
+                                        let obj: any = {};
+                                        obj[args.options.groupby] = x;
+                                        obj["values"] = gbResult[x].length,
+                                        gbResultReduced.push(obj);
+                                    });
+                                    vorpal.log(cTable.getTable(gbResultReduced));
+                                }
+                            }
+                                
+                            else if (!args.options.count && result.length > 0) // No options
                                 vorpal.log(cTable.getTable(result));
+                                
                             callback();
                         })
                         .catch(__this._serverInvalidCommandError);
@@ -219,12 +255,48 @@ export class RemoteCLI extends Client {
              */
             vorpal
                 .command('clis [token]', 'Get server connected CLIs.')
+                .option('-w, --where <filter>', 'Find a certain value of a property')
+                .option('-g, --groupby <property>', 'Group result by a property')
+                .option('-c, --count', 'Count only')
                 .action((args: any, callback: Function) => {
                     __this._executeDistantCommand("getCLIs", args.token)
                         .then((result: any) => {
+                            // Process where
+                            if (args.options.where){
+                                if (!args.options.where.includes("=")) {
+                                    vorpal.log("Invalid where filter");
+                                }
+                                else {
+                                    let where: any = args.options.where.split("=");
+                                    let key: string = where[0].trim();
+                                    let filter: string = where[1].replace(/'/gi, "").trim(); // filter is surrounded with quotes involuntary by vorpal
+
+                                    result = result.filter((x: any) => x[key] == filter);
+                                }
+                            }
+                            
                             vorpal.log(result.length + " CLIs");
-                            if (result.length > 0)
+                            
+                            // Process grouby
+                            if (!args.options.count && args.options.groupby) {
+                                let gbResult = __this._objectGroupByProperty(result, args.options.groupby);
+
+                                if (Object.keys(gbResult).length > 0){ // Has result: format
+                                    let gbResultReduced: any = [];
+                                    
+                                    Object.keys(gbResult).forEach(x => { // Create value object
+                                        let obj: any = {};
+                                        obj[args.options.groupby] = x;
+                                        obj["values"] = gbResult[x].length,
+                                        gbResultReduced.push(obj);
+                                    });
+                                    vorpal.log(cTable.getTable(gbResultReduced));
+                                }
+                            }
+                                
+                            else if (!args.options.count && result.length > 0) // No options
                                 vorpal.log(cTable.getTable(result));
+                                
                             callback();
                         })
                         .catch(__this._serverInvalidCommandError);
@@ -359,6 +431,13 @@ export class RemoteCLI extends Client {
                 reject(e);
             }
         });
+    }
+    
+    private _objectGroupByProperty(obj: any, prop: string){
+        return obj.reduce(function(rv: any, x: any) {
+            (rv[x[prop]] = rv[x[prop]] || []).push(x);
+            return rv;
+        }, {});
     }
 
     /**
