@@ -202,6 +202,24 @@ export class Server {
 
             },
             /**
+             * Action when the worker task failed
+             * Resend the error to all internal event subscribers
+             * @param error
+             */
+            taskError: function(error: any) {
+                let workerProxy = this.clientProxy;
+
+
+                __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
+                    __this.serverEvent.emit("taskError", error, client, workerProxy);
+
+                    client.taskStatus = TaskStatus.Error;
+                    __this._sendEventToSubscribedCLIs("taskError", error, client.token); //Send task event to subscribed CLIS
+                    __this._saveWorkerLog(client, "taskError", "STOPPED"); //Save to log
+                });
+
+            },
+            /**
              * Action when a custom event is emitted from a worker task
              * Resend the event to all internal event subscribers
              * @param {string} eventName
@@ -227,7 +245,7 @@ export class Server {
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
                     __this.serverEvent.emit("taskEnded", data, client, workerProxy);
 
-                    client.taskStatus = TaskStatus.Idle;
+                    client.taskStatus = TaskStatus.Ended;
                     __this._saveWorkerLog(client, "taskStatus", "ENDED: " + data); //Save to log
                     __this._releaseWorkerIdentity(client);
                 });
@@ -339,7 +357,7 @@ export class Server {
                         // Custom filter if token parameter is set and Worker
                     return (token !== null) ? (client.clientType == ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientType.Worker);
                 }).forEach(client => { // Get Workers clients ONLY
-                    if ((totalPromised < limit || limit == 0) && ((typeof args.force != "undefined" && args.force) || client.taskStatus != TaskStatus.Running)) { // Launch task only if task is not currently running and limit is set and not reached
+                    if ((totalPromised < limit || limit == 0) && ((typeof args.force != "undefined" && args.force) || client.taskStatus == TaskStatus.Idle)) { // Launch task only if task is currently stopped and limit is set and not reached
 
                         // Check if getIdentity callback promise has been set
                         if (__this.identityCallback != null) {

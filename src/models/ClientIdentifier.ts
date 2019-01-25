@@ -8,6 +8,7 @@ export enum ClientType {
 export enum TaskStatus {
     Idle = 0,
     Running,
+    Ended,
     Error
 }
 

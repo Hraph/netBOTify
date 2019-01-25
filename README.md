@@ -103,8 +103,9 @@ worker.onStopTask((server) => {
 - `.connect()`: if autoConnect is set to false, connect manually to the server
 - `.onLaunchTask(callback)`: add an action on launching the task by the server
 - `.onStopTask(callback)`: add an action on stopping the task by the server
-- `.sendTaskResult(result)`: send the task result the server
-- `.sendTaskEnd(data)`: send that the task has ended (with custom data)
+- `.sendTaskResult(result)`: send the task result the server (worker is still running)
+- `.sendTaskError(error)`: send an error and set status "error"
+- `.sendTaskEnd(data)`: send that the task has ended (with custom data) and set status "ended"
 - `.sendTaskEvent(eventName, data)`: send a custom event to the server
 
 ---

@@ -157,13 +157,23 @@ export class Worker extends Client {
     }
 
     /**
+     * Send task error
+     * @param error
+     */
+    public sendTaskError(error: any = null){
+        if (this.server !== null)
+            this.server.task.taskError(error);
+        this.identifier.taskStatus = TaskStatus.Error;
+    }
+
+    /**
      * Send task end status to the server
      * @param data
      */
     public sendTaskEnded(data: any = null){
         if (this.server !== null)
             this.server.task.taskEnded(data);
-        this.identifier.taskStatus = TaskStatus.Idle;
+        this.identifier.taskStatus = TaskStatus.Ended;
     }
     
     /**
