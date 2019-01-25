@@ -13,7 +13,7 @@ declare var require: any;
 
 export class Worker extends Client {
     private taskEvent: any;
-    private onGetStatusCallback?: (server: any) => any;
+    private onGetStatusCallback?: (server: any) => Promise<any>;
 
     constructor(config: WorkerConfig = {}){
         super(config); //Create client
@@ -110,10 +110,13 @@ export class Worker extends Client {
          */
         this.client.exports.statusTask = function() {
             //this.serverProxy is injected by eureca
+            let context = this;
+            context.async = true; //Define an asynchronous return
+
             if (__this.onGetStatusCallback !=  null)
-                return __this.onGetStatusCallback(__this.server);
+                return __this.onGetStatusCallback(__this.server).then(data => context.return(data));
             else
-                return null;
+                context.return(null);
         };
 
         /**
@@ -145,7 +148,7 @@ export class Worker extends Client {
      * Add handler on task end request event
      * @param {(server: any) => void} callback
      */
-    public onStatusTask(callback: (server: any) => void){
+    public onStatusTask(callback: (server: any) => Promise<any>){
         this.onGetStatusCallback = callback;
     }
 

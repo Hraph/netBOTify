@@ -61,10 +61,12 @@ class Worker extends Client_1.Client {
             __this.identifier.taskStatus = ClientIdentifier_1.TaskStatus.Idle;
         };
         this.client.exports.statusTask = function () {
+            let context = this;
+            context.async = true;
             if (__this.onGetStatusCallback != null)
-                return __this.onGetStatusCallback(__this.server);
+                return __this.onGetStatusCallback(__this.server).then(data => context.return(data));
             else
-                return null;
+                context.return(null);
         };
         this.client.exports.workerOnEvent = function (eventName, data = null) {
             __this.taskEvent.emit("serverEvent:" + eventName, __this.server, data);

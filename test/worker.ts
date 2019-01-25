@@ -30,10 +30,10 @@ worker.onServerEvent("workerSayHello", (data, server) => {
     worker.sendTaskEvent("helloBack", "Hello");
 });
 
-worker.onStatusTask((server => {
+worker.onStatusTask(async function(server) {
     worker.logger().debug("Get status");
     return {
         number: Math.random(),
         token: identifier.token
     }
-}));
+});
