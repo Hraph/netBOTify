@@ -284,10 +284,9 @@ export class RemoteCLI extends Client {
                             vorpal.log(result.length + " workers");
 
                             // Process grouby
-                            if (!args.options.count && args.options.groupby) {
-                                vorpal.log(__this._objectGroupByPropertyAndCount(result, args.options.groupby));
-                            }
-                                
+                            if (!args.options.count && args.options.groupby)
+                                vorpal.log(cTable.getTable(__this._objectGroupByPropertyAndCount(result, args.options.groupby)));
+
                             else if (!args.options.count && result.length > 0) // No options
                                 vorpal.log(cTable.getTable(result));
                                 
@@ -326,9 +325,8 @@ export class RemoteCLI extends Client {
                             vorpal.log(result.length + " CLIs");
                             
                             // Process grouby
-                            if (!args.options.count && args.options.groupby) {
-                                vorpal.log(__this._objectGroupByPropertyAndCount(result, args.options.groupby));
-                            }
+                            if (!args.options.count && args.options.groupby)
+                                vorpal.log(cTable.getTable(__this._objectGroupByPropertyAndCount(result, args.options.groupby)));
                                 
                             else if (!args.options.count && result.length > 0) // No options
                                 vorpal.log(cTable.getTable(result));
