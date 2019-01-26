@@ -574,9 +574,18 @@ export class Server {
             let __this = this; //Keep context
             
             let castedData = (typeof data == "object") ? JSON.stringify(data) : data;
-            let formatedData = "[" + (new Date).toISOString() + "] - " + "[" + eventName.toUpperCase() + "] - " + castedData + "\n";
-            let logPath = path.join(this.config.logDirectoryPath, client.groupId, client.instanceId + "." + client.token + ".log.json"); //Log directory is /{groupId}/{instanceId}.{token}.log.json
-            
+            let formatedData: string;
+            let logPath: string;
+
+            if (this.config.separateInstanceLogFiles) { // Each instances have a specific log file
+                formatedData = "[" + (new Date).toISOString() + "] - [" + eventName.toUpperCase() + "] - " + castedData + "\n";
+                logPath = path.join(this.config.logDirectoryPath, client.groupId, client.instanceId + "." + client.token + ".log.json"); //Log directory is /{groupId}/{instanceId}.{token}.log.json
+            }
+            else { // All instances of a group are in a unique log file
+                formatedData = "[" + (new Date).toISOString() + "] - [" + client.instanceId.toUpperCase() + "][" + client.token + "] - [" + eventName.toUpperCase() + "] - " + castedData + "\n";
+                logPath = path.join(this.config.logDirectoryPath, client.groupId, "log.json"); //Log directory is /{groupId}/log.json
+            }
+
             function processErr(err: any){
                 logger.server().error('Unable to save log: ', err);
                 __this.sendEventToSubscribedCLIs("saveLogError", "Save log error " + err, client.token);
@@ -600,7 +609,7 @@ export class Server {
             let __this = this; //Keep context
             
             let castedData = (typeof result == "object") ? JSON.stringify(result) : result;
-            let formatedData = "[" + (new Date).toISOString() + "] - " + "[" + client.token + "] - " + castedData + "\n";
+            let formatedData = "[" + (new Date).toISOString() + "] - [" + client.token + "] - " + castedData + "\n";
 
             function processErr(err: any){
                 logger.server().error('Unable to save result: ', err);

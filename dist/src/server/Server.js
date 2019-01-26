@@ -339,8 +339,16 @@ class Server {
         if (this.saveLogToDirectory && client.clientType == ClientIdentifier_1.ClientType.Worker) {
             let __this = this;
             let castedData = (typeof data == "object") ? JSON.stringify(data) : data;
-            let formatedData = "[" + (new Date).toISOString() + "] - " + "[" + eventName.toUpperCase() + "] - " + castedData + "\n";
-            let logPath = path.join(this.config.logDirectoryPath, client.groupId, client.instanceId + "." + client.token + ".log.json");
+            let formatedData;
+            let logPath;
+            if (this.config.separateInstanceLogFiles) {
+                formatedData = "[" + (new Date).toISOString() + "] - [" + eventName.toUpperCase() + "] - " + castedData + "\n";
+                logPath = path.join(this.config.logDirectoryPath, client.groupId, client.instanceId + "." + client.token + ".log.json");
+            }
+            else {
+                formatedData = "[" + (new Date).toISOString() + "] - [" + client.instanceId.toUpperCase() + "][" + client.token + "] - [" + eventName.toUpperCase() + "] - " + castedData + "\n";
+                logPath = path.join(this.config.logDirectoryPath, client.groupId, "log.json");
+            }
             function processErr(err) {
                 logger_1.logger.server().error('Unable to save log: ', err);
                 __this.sendEventToSubscribedCLIs("saveLogError", "Save log error " + err, client.token);
@@ -354,7 +362,7 @@ class Server {
         if (this.saveResultToFile && client.clientType == ClientIdentifier_1.ClientType.Worker) {
             let __this = this;
             let castedData = (typeof result == "object") ? JSON.stringify(result) : result;
-            let formatedData = "[" + (new Date).toISOString() + "] - " + "[" + client.token + "] - " + castedData + "\n";
+            let formatedData = "[" + (new Date).toISOString() + "] - [" + client.token + "] - " + castedData + "\n";
             function processErr(err) {
                 logger_1.logger.server().error('Unable to save result: ', err);
                 __this.sendEventToSubscribedCLIs("saveResultError", "Save log result " + err, client.token);
