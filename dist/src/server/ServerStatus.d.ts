@@ -2,6 +2,7 @@ import { Server } from './Server';
 export interface ServerStatusData {
     connectedWorkers: number;
     connectedClis: number;
+    idleTasks: number;
     launchedTasks: number;
     endedTasks: number;
     errorTasks: number;
