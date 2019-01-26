@@ -30,8 +30,15 @@ worker.onServerEvent("workerSayHello", (server, data) => {
     worker.sendTaskEvent("helloBack", "Hello");
 });
 
+/*function delay(){
+    return new Promise(((resolve, reject) => {
+        setTimeout(()=> resolve, 10000);
+    }));
+}*/
+
 worker.onStatusTask(async function(server) {
     worker.logger().debug("Get status");
+    //await delay();
     return {
         number: Math.random(),
         token: identifier.token

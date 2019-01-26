@@ -5,6 +5,7 @@ const logger_1 = require("../logger");
 const GlobalParameter_1 = require("../models/GlobalParameter");
 const ServerStatus_1 = require("./ServerStatus");
 const eureca_io_1 = require("eureca.io");
+const utils_1 = require("../utils");
 const express = require('express'), app = express(), webServer = require('http').createServer(app), EventEmitter = require("events"), fs = require('fs-extra'), path = require('path');
 class Server {
     constructor(config = {}) {
@@ -244,18 +245,19 @@ class Server {
                 }).forEach(client => {
                     if ((totalPromised < limit || limit == 0) && ((typeof args.force != "undefined" && args.force) || client.taskStatus == ClientIdentifier_1.TaskStatus.Idle)) {
                         if (__this.identityCallback != null) {
-                            clientPromises.push(__this.identityCallback().then((identity) => {
+                            clientPromises.push(utils_1.promiseTimeout(5000, __this.identityCallback().then((identity) => {
                                 let clientIdentifier = __this.clients.find(x => x.clientId == client.clientId);
                                 if (typeof clientIdentifier !== "undefined")
                                     clientIdentifier.identity = identity;
-                                return __this.server.getClient(client.clientId).launchTask(identity, __this.globalParameters).then(() => ++success);
-                            }).catch((err) => {
+                                return __this.server.getClient(client.clientId).launchTask(identity, __this.globalParameters);
+                            })).then(() => ++success)
+                                .catch((err) => {
                                 logger_1.logger.server().error("Error while getting identity", err);
                                 ++errors;
                             }));
                         }
                         else {
-                            clientPromises.push(__this.server.getClient(client.clientId).launchTask(null, __this.globalParameters).then(() => ++success));
+                            clientPromises.push(utils_1.promiseTimeout(5000, __this.server.getClient(client.clientId).launchTask(null, __this.globalParameters)).then(() => ++success));
                         }
                         ++totalPromised;
                     }
@@ -294,7 +296,7 @@ class Server {
                     return (whereKey != null && whereFilter != null) ? client[whereKey] == whereFilter : true;
                 }).forEach(client => {
                     if ((totalPromised < limit || limit == 0) && ((typeof args.force != "undefined" && args.force) || client.taskStatus != ClientIdentifier_1.TaskStatus.Idle)) {
-                        clientPromises.push(__this.server.getClient(client.clientId).stopTask()
+                        clientPromises.push(utils_1.promiseTimeout(5000, __this.server.getClient(client.clientId).stopTask())
                             .catch((e) => {
                             logger_1.logger.server().error("Unable to stop task ", e);
                             ++errors;

@@ -6,6 +6,7 @@ import {ServerStatus} from './ServerStatus';
 import { Server as EurecaServer } from 'eureca.io';
 import {GetIdentityCallback, ReleaseIdentityCallback, WorkerIdentity} from "../models/WorkerIdentity";
 import {Logger} from "log4js";
+import {promiseAllTimeout, promiseTimeout} from "../utils";
 
 const express = require('express')
     , app = express()
@@ -434,15 +435,16 @@ export class Server {
                         if (__this.identityCallback != null) {
 
                             // Get identity
-                            clientPromises.push(__this.identityCallback().then((identity: WorkerIdentity) => {
+                            clientPromises.push(promiseTimeout(5000, __this.identityCallback().then((identity: WorkerIdentity) => { // timeout 5 sec
 
                                 // Get clientIdentifier
                                 let clientIdentifier: any = __this.clients.find(x => x.clientId == client.clientId);
                                 if (typeof clientIdentifier !== "undefined")
                                     clientIdentifier.identity = identity; // Save identity for releasing
 
-                                return __this.server.getClient(client.clientId).launchTask(identity, __this.globalParameters).then(() => ++success); // Launch task with identity
-                            }).catch((err: any) => {
+                                return __this.server.getClient(client.clientId).launchTask(identity, __this.globalParameters); // Launch task with identity
+                            })).then(() => ++success)
+                                .catch((err: any) => {
                                 logger.server().error("Error while getting identity", err);
                                 ++errors; // Increments errors
                             }));
@@ -450,7 +452,7 @@ export class Server {
 
                         // No identity
                         else {
-                            clientPromises.push(__this.server.getClient(client.clientId).launchTask(null, __this.globalParameters).then(() => ++success)); // Launch task without identity
+                            clientPromises.push(promiseTimeout(5000, __this.server.getClient(client.clientId).launchTask(null, __this.globalParameters)).then(() => ++success)); // Launch task without identity timeout 5 sec
                         }
 
                         ++totalPromised;
@@ -504,7 +506,7 @@ export class Server {
                     }).forEach(client => { // Get Workers clients ONLY
                         if ((totalPromised < limit || limit == 0) && ((typeof args.force != "undefined" && args.force) || client.taskStatus != TaskStatus.Idle)){ // Stop task only if task is not currently stopped and limit is set and not reached
                             clientPromises.push(
-                                __this.server.getClient(client.clientId).stopTask()
+                                promiseTimeout(5000, __this.server.getClient(client.clientId).stopTask()) // timeout 5 sec
                                     .catch((e: any) => { // Catch directly error
                                         logger.server().error("Unable to stop task ", e);
                                         ++errors; // Increments errors
