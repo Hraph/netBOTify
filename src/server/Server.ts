@@ -210,7 +210,7 @@ export class Server {
 
                     client.taskStatus = TaskStatus.Error;
                     __this.sendEventToSubscribedCLIs("taskError", error, client.token); //Send task event to subscribed CLIS
-                    __this._saveWorkerLog(client, "taskError", "STOPPED"); //Save to log
+                    __this._saveWorkerLog(client, "taskError", error); //Save to log
                 });
 
             },
@@ -241,7 +241,7 @@ export class Server {
                     __this.serverEvent.emit("taskEnded", data, client, workerProxy);
 
                     client.taskStatus = TaskStatus.Ended;
-                    __this._saveWorkerLog(client, "taskStatus", "ENDED: " + data); //Save to log
+                    __this._saveWorkerLog(client, "taskStatus", "ENDED: " + (typeof data == "object") ? JSON.stringify(data) : data); //Save to log
                     __this._releaseWorkerIdentity(client);
                 });
             },

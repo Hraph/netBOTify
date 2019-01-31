@@ -112,7 +112,7 @@ class Server {
                     __this.serverEvent.emit("taskError", error, client, workerProxy);
                     client.taskStatus = ClientIdentifier_1.TaskStatus.Error;
                     __this.sendEventToSubscribedCLIs("taskError", error, client.token);
-                    __this._saveWorkerLog(client, "taskError", "STOPPED");
+                    __this._saveWorkerLog(client, "taskError", error);
                 });
             },
             taskEvent: function (eventName, data = null) {
@@ -127,7 +127,7 @@ class Server {
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
                     __this.serverEvent.emit("taskEnded", data, client, workerProxy);
                     client.taskStatus = ClientIdentifier_1.TaskStatus.Ended;
-                    __this._saveWorkerLog(client, "taskStatus", "ENDED: " + data);
+                    __this._saveWorkerLog(client, "taskStatus", "ENDED: " + (typeof data == "object") ? JSON.stringify(data) : data);
                     __this._releaseWorkerIdentity(client);
                 });
             },

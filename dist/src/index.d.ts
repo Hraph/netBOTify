@@ -5,3 +5,4 @@ export * from './client/Worker';
 export * from './models/ClientIdentifier';
 export * from './models/WorkerIdentity';
 export * from './models/GlobalParameter';
+export * from './logger';

@@ -9,4 +9,5 @@ __export(require("./server/Server"));
 __export(require("./client/Worker"));
 __export(require("./models/ClientIdentifier"));
 __export(require("./models/GlobalParameter"));
+__export(require("./logger"));
 //# sourceMappingURL=index.js.map

@@ -8,3 +8,6 @@ export * from './client/Worker'
 export * from './models/ClientIdentifier'
 export * from './models/WorkerIdentity'
 export * from './models/GlobalParameter'
+
+// Logger
+export * from './logger'
