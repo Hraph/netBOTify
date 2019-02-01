@@ -1,8 +1,9 @@
 import { Client } from "./Client";
+import { ClientIdentifier } from "../models/ClientIdentifier";
 import { RemoteCLIConfig } from "../models/RemoteCLIConfig";
 import { Logger } from "log4js";
 export declare class RemoteCLI extends Client {
-    private taskEvent;
+    private cliEvent;
     private globalParameters;
     constructor(config?: RemoteCLIConfig);
     private _setupTaskParameters;
@@ -16,4 +17,7 @@ export declare class RemoteCLI extends Client {
         description: string;
     }]): void;
     logger(): Logger;
+    onTaskResult(callback: (result: any, identifier: ClientIdentifier, workerToken: string) => void): void;
+    onTaskEvent(eventName: string, callback: (data: any, identifier: ClientIdentifier, workerToken: string) => void): void;
+    onTaskAnyEvent(callback: (eventName: string, data: any, identifier: ClientIdentifier, workerToken: string) => void): void;
 }

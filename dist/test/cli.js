@@ -10,7 +10,7 @@ let cli = new src_1.RemoteCLI({
     logger: 'debug'
 });
 cli.addCommand("test", "Write a test", (args, callback) => {
-    console.log("TEST");
+    cli.logger().debug("TEST");
     callback();
 });
 cli.addCommand("helloWorkers", "Get screenshot", (args, endCommand) => {
@@ -20,4 +20,10 @@ cli.addCommand("helloWorkers", "Get screenshot", (args, endCommand) => {
         key: "-b, --bye",
         description: "Say goodbye"
     }]);
+cli.onTaskAnyEvent((eventName, data, identifier, workerToken) => {
+    cli.logger().debug("Got event %s", eventName);
+});
+cli.onTaskResult((data, identifier, workerToken) => {
+    cli.logger().debug("Got result:", data);
+});
 //# sourceMappingURL=cli.js.map

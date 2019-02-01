@@ -21,6 +21,9 @@ class Server {
             this.config = config;
             let __this = this;
             this.serverEvent = new EventEmitter();
+            this.serverEvent.on("taskEvent", (eventName, data, identifier, workerProxy) => {
+                this.serverEvent.emit("taskEvent:" + eventName, data, identifier, workerProxy);
+            });
             if (config.logger)
                 logger_1.logger.setServerLevel(config.logger);
             this.saveLogToDirectory = (config.logDirectoryPath) ? true : false;
@@ -87,21 +90,25 @@ class Server {
         };
         this.server.exports.task = {
             taskLaunched: function () {
+                let workerProxy = this.clientProxy;
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
                     client.taskStatus = ClientIdentifier_1.TaskStatus.Running;
+                    __this.serverEvent.emit("taskEvent", "taskLaunched", null, client, workerProxy);
                     __this._saveWorkerLog(client, "taskStatus", "LAUNCHED");
                 });
             },
             taskStopped: function () {
+                let workerProxy = this.clientProxy;
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
                     client.taskStatus = ClientIdentifier_1.TaskStatus.Idle;
+                    __this.serverEvent.emit("taskEvent", "taskStopped", null, client, workerProxy);
                     __this._saveWorkerLog(client, "taskStatus", "STOPPED");
                 });
             },
             taskResult: function (result) {
                 let workerProxy = this.clientProxy;
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
-                    __this.serverEvent.emit("taskResult", result, client, workerProxy);
+                    __this.serverEvent.emit("taskEvent", "taskResult", result, client, workerProxy);
                     __this.sendEventToSubscribedCLIs("taskResult", result, client.token);
                     __this._saveWorkerResult(client, result);
                 });
@@ -109,7 +116,7 @@ class Server {
             taskError: function (error) {
                 let workerProxy = this.clientProxy;
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
-                    __this.serverEvent.emit("taskError", error, client, workerProxy);
+                    __this.serverEvent.emit("taskEvent", "taskError", error, client, workerProxy);
                     client.taskStatus = ClientIdentifier_1.TaskStatus.Error;
                     __this.sendEventToSubscribedCLIs("taskError", error, client.token);
                     __this._saveWorkerLog(client, "taskError", error);
@@ -118,14 +125,15 @@ class Server {
             taskEvent: function (eventName, data = null) {
                 let workerProxy = this.clientProxy;
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
-                    __this.serverEvent.emit("taskEvent:" + eventName, data, client, workerProxy);
+                    __this.serverEvent.emit("taskEvent", eventName, data, client, workerProxy);
+                    __this.sendEventToSubscribedCLIs(eventName, data, client.token);
                     __this._saveWorkerLog(client, eventName, data);
                 });
             },
             taskEnded: function (data) {
                 let workerProxy = this.clientProxy;
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
-                    __this.serverEvent.emit("taskEnded", data, client, workerProxy);
+                    __this.serverEvent.emit("taskEvent", "taskResult", data, client, workerProxy);
                     client.taskStatus = ClientIdentifier_1.TaskStatus.Ended;
                     __this._saveWorkerLog(client, "taskStatus", "ENDED: " + (typeof data == "object") ? JSON.stringify(data) : data);
                     __this._releaseWorkerIdentity(client);
@@ -402,13 +410,16 @@ class Server {
         webServer.listen(this.config.port);
     }
     onTaskResult(callback) {
-        this.serverEvent.on("taskResult", callback);
+        this.serverEvent.on("taskEvent:taskResult", callback);
     }
     onTaskEvent(eventName, callback) {
         this.serverEvent.on("taskEvent:" + eventName, callback);
     }
+    onTaskAnyEvent(callback) {
+        this.serverEvent.on("taskEvent", callback);
+    }
     onTaskEnded(callback) {
-        this.serverEvent.on("taskEnded", callback);
+        this.serverEvent.on("taskEvent:taskEnded", callback);
     }
     addGlobalParameter(key, defaultValue, value = null) {
         this.globalParameters[key] = (new GlobalParameter_1.GlobalParameter(key, defaultValue, value));

@@ -9,7 +9,7 @@ class RemoteCLI extends Client_1.Client {
         super(config);
         this.globalParameters = null;
         let __this = this;
-        this.taskEvent = new EventEmitter();
+        this.cliEvent = new EventEmitter();
         this.identifier.clientType = ClientIdentifier_1.ClientType.RemoteCLI;
         try {
             if (config.logger)
@@ -42,7 +42,9 @@ class RemoteCLI extends Client_1.Client {
                 }
             });
             this.client.exports.CLIOnEvent = function (eventName, data = null, token) {
-                logger_1.logger.cli().info("EVENT %s (%s):", eventName, token, data);
+                logger_1.logger.cli().trace("EVENT %s (%s)", eventName, token);
+                __this.cliEvent.emit("taskEvent", eventName, data, token);
+                __this.cliEvent.emit("taskEvent:" + eventName, data, token);
             };
             if (!this.config.delimiter)
                 this.config.delimiter = "netBOTify";
@@ -340,6 +342,15 @@ class RemoteCLI extends Client_1.Client {
     }
     logger() {
         return logger_1.logger.cli();
+    }
+    onTaskResult(callback) {
+        this.cliEvent.on("taskEvent:taskResult", callback);
+    }
+    onTaskEvent(eventName, callback) {
+        this.cliEvent.on("taskEvent:" + eventName, callback);
+    }
+    onTaskAnyEvent(callback) {
+        this.cliEvent.on("taskEvent", callback);
     }
 }
 exports.RemoteCLI = RemoteCLI;

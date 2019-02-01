@@ -12,7 +12,7 @@ let cli = new RemoteCLI({
 });
 
 cli.addCommand("test", "Write a test", (args: any, callback: Function) => {
-    console.log("TEST");
+    cli.logger().debug("TEST");
     callback();
 });
 
@@ -23,3 +23,11 @@ cli.addCommand("helloWorkers", "Get screenshot", (args, endCommand) => {
     key: "-b, --bye",
     description: "Say goodbye"
 }]);
+
+cli.onTaskAnyEvent((eventName: string, data: any, identifier: ClientIdentifier, workerToken: string) => {
+    cli.logger().debug("Got event %s", eventName);
+});
+
+cli.onTaskResult((data: any, identifier: ClientIdentifier, workerToken: string) => {
+    cli.logger().debug("Got result:", data);
+});

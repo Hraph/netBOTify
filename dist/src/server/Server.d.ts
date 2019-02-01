@@ -27,6 +27,7 @@ export declare class Server {
     connect(): void;
     onTaskResult(callback: (result: any, identifier: ClientIdentifier, workerProxy: any) => void): void;
     onTaskEvent(eventName: string, callback: (data: any, identifier: ClientIdentifier, workerProxy: any) => void): void;
+    onTaskAnyEvent(callback: (eventName: string, data: any, identifier: ClientIdentifier, workerProxy: any) => void): void;
     onTaskEnded(callback: (data: any, identifier: ClientIdentifier, workerProxy: any) => void): void;
     addGlobalParameter(key: string, defaultValue: any, value?: any): void;
     getGlobalParameter(key: string): false | GlobalParameter<any>;

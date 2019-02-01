@@ -138,6 +138,7 @@ cli.addCommand("commandName", "Command description", (args, callback) => {
 - `autoConnect`: if autoConnect is set to false, connect manually to the server with .connect()
 - `delimiter`: set a custom prefix for the shell
 - `autoSubscribe`: subscribe automatically the the server events (tasks results, task ends) when the server is connected
+- `disableInput`: disable CLI user input
 - `identifier`: give a custom identifier to the cli
 - `logger`: set the minimal printed mode of logs from `debug`, `info`, `error`
 
