@@ -382,12 +382,12 @@ export class Server {
                     // Process where
                     return (whereKey != null && whereFilter != null) ? client[whereKey] == whereFilter : true;
                 }).forEach(client => {
-                    clientPromises.push(__this.server.getClient(client.clientId).statusTask().then((status: any) => {
+                    clientPromises.push(promiseTimeout(20000, __this.server.getClient(client.clientId).statusTask()).then((status: any) => { // timeout 20 sec
                         if (status != null)
                             statuses.push(status);
                         ++success;
                     }).catch((err: any) => {
-                        logger.server().error("Error while getting worker status", err);
+                        //logger.server().error("Error while getting worker status", err);
                         ++errors; // Increments errors
                     }));
 
@@ -448,7 +448,7 @@ export class Server {
                         if (__this.identityCallback != null) {
 
                             // Get identity
-                            clientPromises.push(promiseTimeout(5000, __this.identityCallback().then((identity: WorkerIdentity) => { // timeout 5 sec
+                            clientPromises.push(promiseTimeout(10000, __this.identityCallback().then((identity: WorkerIdentity) => { // timeout 10 sec
 
                                 // Get clientIdentifier
                                 let clientIdentifier: any = __this.clients.find(x => x.clientId == client.clientId);
@@ -458,14 +458,17 @@ export class Server {
                                 return __this.server.getClient(client.clientId).launchTask(identity, __this.globalParameters); // Launch task with identity
                             })).then(() => ++success)
                                 .catch((err: any) => {
-                                logger.server().error("Error while getting identity", err);
+                                //logger.server().error("Error while getting identity", err);
                                 ++errors; // Increments errors
                             }));
                         }
 
                         // No identity
                         else {
-                            clientPromises.push(promiseTimeout(5000, __this.server.getClient(client.clientId).launchTask(null, __this.globalParameters)).then(() => ++success)); // Launch task without identity timeout 5 sec
+                            clientPromises.push(promiseTimeout(10000, __this.server.getClient(client.clientId).launchTask(null, __this.globalParameters)).then(() => ++success).catch((err: any) => {
+                                //logger.server().error("Error while getting identity", err);
+                                ++errors; // Increments errors
+                            })); // Launch task without identity timeout 10 sec
                         }
 
                         ++totalPromised;
@@ -519,9 +522,9 @@ export class Server {
                     }).forEach(client => { // Get Workers clients ONLY
                         if ((totalPromised < limit || limit == 0) && ((typeof args.force != "undefined" && args.force) || client.taskStatus != TaskStatus.Idle)){ // Stop task only if task is not currently stopped and limit is set and not reached
                             clientPromises.push(
-                                promiseTimeout(5000, __this.server.getClient(client.clientId).stopTask()) // timeout 5 sec
+                                promiseTimeout(10000, __this.server.getClient(client.clientId).stopTask()) // timeout 10 sec
                                     .catch((e: any) => { // Catch directly error
-                                        logger.server().error("Unable to stop task ", e);
+                                        //logger.server().error("Unable to stop task ", e);
                                         ++errors; // Increments errors
                                     })
                             ); //Stop task

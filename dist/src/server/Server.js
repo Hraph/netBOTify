@@ -206,12 +206,11 @@ class Server {
                 }).filter(client => {
                     return (whereKey != null && whereFilter != null) ? client[whereKey] == whereFilter : true;
                 }).forEach(client => {
-                    clientPromises.push(__this.server.getClient(client.clientId).statusTask().then((status) => {
+                    clientPromises.push(utils_1.promiseTimeout(20000, __this.server.getClient(client.clientId).statusTask()).then((status) => {
                         if (status != null)
                             statuses.push(status);
                         ++success;
                     }).catch((err) => {
-                        logger_1.logger.server().error("Error while getting worker status", err);
                         ++errors;
                     }));
                     ++total;
@@ -253,19 +252,20 @@ class Server {
                 }).forEach(client => {
                     if ((totalPromised < limit || limit == 0) && ((typeof args.force != "undefined" && args.force) || client.taskStatus == ClientIdentifier_1.TaskStatus.Idle)) {
                         if (__this.identityCallback != null) {
-                            clientPromises.push(utils_1.promiseTimeout(5000, __this.identityCallback().then((identity) => {
+                            clientPromises.push(utils_1.promiseTimeout(10000, __this.identityCallback().then((identity) => {
                                 let clientIdentifier = __this.clients.find(x => x.clientId == client.clientId);
                                 if (typeof clientIdentifier !== "undefined")
                                     clientIdentifier.identity = identity;
                                 return __this.server.getClient(client.clientId).launchTask(identity, __this.globalParameters);
                             })).then(() => ++success)
                                 .catch((err) => {
-                                logger_1.logger.server().error("Error while getting identity", err);
                                 ++errors;
                             }));
                         }
                         else {
-                            clientPromises.push(utils_1.promiseTimeout(5000, __this.server.getClient(client.clientId).launchTask(null, __this.globalParameters)).then(() => ++success));
+                            clientPromises.push(utils_1.promiseTimeout(10000, __this.server.getClient(client.clientId).launchTask(null, __this.globalParameters)).then(() => ++success).catch((err) => {
+                                ++errors;
+                            }));
                         }
                         ++totalPromised;
                     }
@@ -304,9 +304,8 @@ class Server {
                     return (whereKey != null && whereFilter != null) ? client[whereKey] == whereFilter : true;
                 }).forEach(client => {
                     if ((totalPromised < limit || limit == 0) && ((typeof args.force != "undefined" && args.force) || client.taskStatus != ClientIdentifier_1.TaskStatus.Idle)) {
-                        clientPromises.push(utils_1.promiseTimeout(5000, __this.server.getClient(client.clientId).stopTask())
+                        clientPromises.push(utils_1.promiseTimeout(10000, __this.server.getClient(client.clientId).stopTask())
                             .catch((e) => {
-                            logger_1.logger.server().error("Unable to stop task ", e);
                             ++errors;
                         }));
                         ++totalPromised;
