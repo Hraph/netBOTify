@@ -18,16 +18,19 @@ class RemoteCLI extends Client_1.Client {
                 logger_1.logger.cli().info("Connected to server");
                 if (config.autoSubscribe)
                     vorpal.exec("subscribe");
-                vorpal.show();
+                if (!config.disableInput)
+                    vorpal.show();
             });
             this.client.onConnectionLost(() => {
                 logger_1.logger.cli().info("Disconnected to server\n");
-                vorpal.hide();
+                if (!config.disableInput)
+                    vorpal.hide();
             });
             this.client.onConnect(() => {
                 if (this.client.isReady()) {
                     logger_1.logger.cli().info("Reconnected to server\n");
-                    vorpal.show();
+                    if (!config.disableInput)
+                        vorpal.show();
                 }
             });
             this.client.onError(function (e) {

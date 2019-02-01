@@ -42,18 +42,23 @@ export class RemoteCLI extends Client {
                     vorpal.exec("subscribe");
                     
                 //Launch vorpal
-                vorpal.show();
+                if (!config.disableInput)
+                    vorpal.show();
             });
     
             this.client.onConnectionLost(() => {
                 logger.cli().info("Disconnected to server\n");
-                vorpal.hide();
+
+                if (!config.disableInput)
+                    vorpal.hide();
             });
     
             this.client.onConnect(() => {
                 if (this.client.isReady()) { //Client was ready but is now reconnecting : relaunch vorpal
                     logger.cli().info("Reconnected to server\n");
-                    vorpal.show();
+
+                    if (!config.disableInput)
+                        vorpal.show();
                 }
             });
     

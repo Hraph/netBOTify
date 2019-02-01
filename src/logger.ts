@@ -46,7 +46,7 @@ log4js.worker = (): Logger => {
 log4js.setWorkerLevel = (level: string) => {
     configuration.categories["[WORKER]"] = { appenders: [ 'out' ], level: level }; // Set config
     log4js.configure(configuration); // Apply config
-}
+};
 
 /**
  * Custom logger layout for CLI
@@ -62,7 +62,7 @@ log4js.cli = (): Logger => {
 log4js.setCliLevel = (level: string) => {
     configuration.categories["[CLI]"] = { appenders: [ 'out' ], level: level }; // Set config
     log4js.configure(configuration); // Apply config
-}
+};
 
 /**
  * Default logger print functions for default layout
