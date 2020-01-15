@@ -21,6 +21,9 @@ class Server {
             this.config = config;
             let __this = this;
             this.serverEvent = new EventEmitter();
+            app.get("/alive", (req, res) => {
+                res.sendStatus(200);
+            });
             this.serverEvent.on("taskEvent", (eventName, data, identifier, workerProxy) => {
                 this.serverEvent.emit("taskEvent:" + eventName, data, identifier, workerProxy);
             });

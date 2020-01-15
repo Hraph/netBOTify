@@ -30,7 +30,7 @@ log4js.server = (): Logger  => {
 log4js.setServerLevel = (level: string) => {
     configuration.categories["[SERVER]"] = { appenders: [ 'out' ], level: level }; // Set config
     log4js.configure(configuration); // Apply config
-}
+};
 
 /**
  * Custom logger layout for worker

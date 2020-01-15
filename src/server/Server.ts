@@ -41,6 +41,11 @@ export class Server {
             let __this = this; //Keep context
             this.serverEvent = new EventEmitter();
 
+            // Configure alive http route
+            app.get("/alive", (req: any, res: any) => {
+                res.sendStatus(200);
+            });
+
             // Resend catch all event
             this.serverEvent.on("taskEvent", (eventName: string, data: any, identifier: ClientIdentifier, workerProxy: any) => {
                 this.serverEvent.emit("taskEvent:" + eventName, data, identifier, workerProxy);
@@ -83,7 +88,7 @@ export class Server {
                 prefix: "nbfy",
                 allow: ["launchTask", "stopTask", "statusTask", "workerOnEvent", "CLIOnEvent"]
             });
-            this.server.attach(webServer);
+            this.server.attach(webServer); // Attach express to eureca.io
     
             /**
              * Server internal events handling
