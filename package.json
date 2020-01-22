@@ -40,12 +40,12 @@
     "eureca.io": "git://github.com/hraph/eureca.io.git",
     "express": "^4.16.3",
     "fs-extra": "^8.1.0",
-    "localtunnel": "^2.0.0",
     "log4js": "^6.1.0",
     "vorpal": "^1.12.0"
   },
   "devDependencies": {
     "@types/localtunnel": "^1.9.0",
-    "@types/node": "^12.4.1"
+    "@types/node": "^12.4.1",
+    "ngrok": "^3.2.7"
   }
 }

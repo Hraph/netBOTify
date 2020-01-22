@@ -5,6 +5,8 @@ import {TaskParameterItem, TaskParameterList} from "../models/TaskParameters";
 import {WorkerConfig} from "../models/WorkerConfig";
 import {TaskIdentity} from "../models/TaskIdentity";
 import {Logger} from "log4js";
+import {Tunnel, TunnelProvider, WorkerTunnel} from "../models/WorkerTunnel";
+import {WorkerTunnelNgrok} from "./WorkerTunnels";
 
 const EventEmitter = require("events");
 
@@ -14,6 +16,8 @@ declare var require: any;
 export class Worker extends Client {
     private taskEvent: any;
     private getTaskStatusCallback?: (server: any) => Promise<any>;
+    private tunnels: {[key: number]: Tunnel} = {};
+    private tunnelProvider?: WorkerTunnel;
 
     constructor(config: WorkerConfig = {}){
         super(config); //Create client
@@ -26,6 +30,17 @@ export class Worker extends Client {
              */
             if (config.logger)
                 logger.setWorkerLevel(config.logger);
+
+            /**
+             * Set tunnel config
+             */
+            if (config.tunnelProvider) {
+                if (config.tunnelProvider == TunnelProvider.Ngrok) {
+                    this.tunnelProvider = new WorkerTunnelNgrok(config.tunnelProviderConfig);
+                }
+                else
+                    logger.worker().error(`Invalid Tunnel provider: ${config.tunnelProvider}`);
+            }
     
             /**
              * Client internal events handling
@@ -111,7 +126,7 @@ export class Worker extends Client {
         };
 
         /**
-         * Action for Task Task status
+         * Action for Task status
          */
         this.client.exports.task.status = {
             /**
@@ -129,6 +144,30 @@ export class Worker extends Client {
             }
         };
 
+        /**
+         * Action for Tunnel
+         */
+        this.client.exports.tunnel = {
+            create: async function (localPort: number, isTcp: boolean = true) {
+                //this.serverProxy is injected by eureca
+                let context = this;
+                context.async = true; //Define an asynchronous return
+
+                if (__this.tunnelProvider) {
+                    await __this.tunnelProvider.connect(localPort, isTcp, () => {
+                        //
+                    }, () => {
+
+                    });
+                }
+            },
+            destroy: (localPort: number) => {
+
+            },
+            get: () => {
+
+            }
+        };
 
         /**
          * Action on custom event from the server

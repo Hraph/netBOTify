@@ -1,15 +1,18 @@
-import {Worker} from '../src';
-import {ClientIdentifier} from '../src';
-import {TaskParameterItem, TaskParameterList} from "../src/models/TaskParameters";
+import {ClientIdentifier, Server, Worker} from '../src';
+import {TaskParameterList} from "../src/models/TaskParameters";
 import {TaskIdentity} from "../src/models/TaskIdentity";
-import {Server} from "../src";
+import {TunnelProvider} from "../src/models/WorkerTunnel";
 
 let identifier = new ClientIdentifier("group1", "1");
 
 let worker = new Worker({
     uri: "http://localhost:8000/",
     identifier: identifier,
-    logger: 'debug'
+    logger: 'debug',
+    tunnelProvider: TunnelProvider.Ngrok,
+    tunnelProviderConfig: {
+        authKey: "DEDED"
+    }
 });
 
 worker.task.onLaunchTask((identity: TaskIdentity, parameters: TaskParameterList, server: any) => {
