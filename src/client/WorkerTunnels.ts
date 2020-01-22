@@ -16,14 +16,14 @@ export class WorkerTunnelNgrok implements WorkerTunnel {
         try {
             let ngrok = require("ngrok"); // Synchronous load
             if (typeof ngrok.connect == "undefined") { // Check loaded dependency
-                logger.worker().fatal("Dependency ngrok is not installed!");
+                throw("Dependency ngrok is not installed!");
             }
             else {
                 this.ngrok = ngrok; // Save dependency
             }
         }
         catch (e) {
-            logger.worker().fatal("Dependency ngrok is not installed!");
+            throw("Dependency ngrok is not installed!");
         }
     }
 
@@ -60,6 +60,8 @@ export class WorkerTunnelNgrok implements WorkerTunnel {
 
             return this.ngrok.connect(config);
         }
+        else
+            throw("Dependency ngrok is not installed!");
     }
 
     /**
@@ -69,6 +71,8 @@ export class WorkerTunnelNgrok implements WorkerTunnel {
     async disconnect (url: string = "") {
         if (this.ngrok)
             return this.ngrok.disconnect(url);
+        else
+            throw("Dependency ngrok is not installed!");
     }
 
     /**
@@ -82,6 +86,9 @@ export class WorkerTunnelNgrok implements WorkerTunnel {
      * Kill the Ngrok process
      */
     async kill() {
-        return this.ngrok.kill();
+        if (this.ngrok)
+            return this.ngrok.kill();
+        else
+            throw("Dependency ngrok is not installed!");
     }
 }

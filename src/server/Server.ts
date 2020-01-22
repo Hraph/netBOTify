@@ -275,14 +275,14 @@ export class Server {
                                     //logger.server().error("Unable to stop task ", e);
                                     ++errors; // Increments errors
                                 })
-                        ); //Stop task
+                        ); // Stop task
                         ++totalPromised;
                     }
 
                     ++total;
                 });
 
-                Promise.all(clientPromises).catch((e: any) => { //Wait all stops to finish
+                Promise.all(clientPromises).catch((e: any) => { // Wait all stops to finish
                     logger.server().error("Unable to stop task ", e);
                     ++errors; // Increments errors
                     return []; // Return a value allowing the .then to be called
@@ -304,7 +304,7 @@ export class Server {
                     client.taskStatus = TaskStatus.Running;
 
                     __this.serverEvent.emit("taskEvent", "taskLaunched", null, client, workerProxy); // Emit event
-                    __this._saveWorkerLog(client, "taskStatus", "LAUNCHED"); //Save to log
+                    __this._saveWorkerLog(client, "taskStatus", "LAUNCHED"); // Save to log
                 });
             },
             /**
@@ -317,7 +317,7 @@ export class Server {
                     client.taskStatus = TaskStatus.Idle;
 
                     __this.serverEvent.emit("taskEvent", "taskStopped", null, client, workerProxy); // Emit event
-                    __this._saveWorkerLog(client, "taskStatus", "STOPPED"); //Save to log
+                    __this._saveWorkerLog(client, "taskStatus", "STOPPED"); // Save to log
                 });
             },
             /**
@@ -331,10 +331,9 @@ export class Server {
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
                     __this.serverEvent.emit("taskEvent", "taskResult", result, client, workerProxy); // Emit event
 
-                    __this.events.sendEventToSubscribedCLIs("taskResult", result, client.token); //Send task event to subscribed CLIS
-                    __this._saveWorkerResult(client, result); //Save to log
+                    __this.events.sendEventToSubscribedCLIs("taskResult", result, client.token); // Send task event to subscribed CLIS
+                    __this._saveWorkerResult(client, result); // Save to log
                 });
-
             },
             /**
              * Action when the worker task failed
@@ -344,15 +343,13 @@ export class Server {
             onError: function(error: any) {
                 let workerProxy = this.clientProxy;
 
-
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
                     __this.serverEvent.emit("taskEvent", "taskError", error, client, workerProxy); // Emit event
 
                     client.taskStatus = TaskStatus.Error;
-                    __this.events.sendEventToSubscribedCLIs("taskError", error, client.token); //Send task event to subscribed CLIS
-                    __this._saveWorkerLog(client, "taskError", error); //Save to log
+                    __this.events.sendEventToSubscribedCLIs("taskError", error, client.token); // Send task event to subscribed CLIS
+                    __this._saveWorkerLog(client, "taskError", error); // Save to log
                 });
-
             },
             /**
              * Action when a custom event is emitted from a worker task
@@ -367,7 +364,7 @@ export class Server {
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
                     __this.serverEvent.emit("taskEvent", eventName, data, client, workerProxy); // Emit event
 
-                    __this.events.sendEventToSubscribedCLIs(eventName, data, client.token); //Send task event to subscribed CLIS
+                    __this.events.sendEventToSubscribedCLIs(eventName, data, client.token); // Send task event to subscribed CLIS
                     __this._saveWorkerLog(client, eventName, data);
                 });
             },
@@ -383,7 +380,7 @@ export class Server {
 
                     client.taskStatus = TaskStatus.Ended;
                     let formattedData = (typeof data == "object") ? JSON.stringify(data) : data;
-                    __this._saveWorkerLog(client, "taskStatus", `ENDED: ${formattedData}`); //Save to log
+                    __this._saveWorkerLog(client, "taskStatus", `ENDED: ${formattedData}`); // Save to log
                     __this._releaseTaskIdentity(client);
                 });
             },
@@ -396,7 +393,7 @@ export class Server {
             b64Image: function(fileName: string, extension: string, buffer: string){
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
                     __this._saveWorkerB64Image(client, fileName, extension, buffer);
-                    __this._saveWorkerLog(client, "taskStatus", "FILE: " + fileName + "." + extension); //Save to log
+                    __this._saveWorkerLog(client, "taskStatus", "FILE: " + fileName + "." + extension); // Save to log
                 });
             }
         };
@@ -417,7 +414,7 @@ export class Server {
              * @param {TaskParameterList} parameters
              */
             save: function(parameters: TaskParameterList = {}) {
-                __this._saveTaskParameters(parameters); //Save parameters
+                __this._saveTaskParameters(parameters); // Save parameters
             }
         };
 
@@ -433,7 +430,7 @@ export class Server {
             get: function (token: any = null, args: {where: string}){
                 let clientPromises: any[] = [];
                 let context = this;
-                context.async = true; //Define an asynchronous return
+                context.async = true; // Define an asynchronous return
 
                 let total = 0;
                 let errors = 0;
@@ -581,6 +578,39 @@ export class Server {
                     return []; // Return a value allowing the .then to be called
                 }).then(() => { // Send success anyway even if failed
                     context.return(results);
+                });
+            },
+            /**
+             * Action when a custom event is emitted from a worker tunnel
+             * Resend the event to all internal event subscribers
+             * @param {string} eventName
+             * @param data
+             */
+            onEvent: function(eventName: string, data: any = null){
+                let workerProxy = this.clientProxy;
+
+                //Save to log
+                __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
+                    __this.serverEvent.emit("tunnelEvent", eventName, data, client, workerProxy); // Emit event
+
+                    __this.events.sendEventToSubscribedCLIs(eventName, data, client.token); //Send task event to subscribed CLIS
+                    __this._saveWorkerLog(client, eventName, data);
+                });
+            },
+            /**
+             * Action when the worker tunnel failed
+             * Resend the error to all internal event subscribers
+             * @param error
+             */
+            onError: function(error: any) {
+                let workerProxy = this.clientProxy;
+
+                //Save to log
+                __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
+                    __this.serverEvent.emit("tunnelEvent", "tunnelError", error, client, workerProxy); // Emit event
+
+                    __this.events.sendEventToSubscribedCLIs("tunnelError", error, client.token); //Send task event to subscribed CLIS
+                    __this._saveWorkerLog(client, "tunnelError", error);
                 });
             }
         };

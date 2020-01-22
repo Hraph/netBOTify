@@ -34,12 +34,17 @@ export class Worker extends Client {
             /**
              * Set tunnel config
              */
-            if (config.tunnelProvider) {
-                if (config.tunnelProvider == TunnelProvider.Ngrok) {
-                    this.tunnelProvider = new WorkerTunnelNgrok(config.tunnelProviderConfig);
+            try{
+                if (config.tunnelProvider) {
+                    if (config.tunnelProvider == TunnelProvider.Ngrok) {
+                        this.tunnelProvider = new WorkerTunnelNgrok(config.tunnelProviderConfig);
+                    }
+                    else
+                        logger.worker().error(`Invalid Tunnel provider: ${config.tunnelProvider}`);
                 }
-                else
-                    logger.worker().error(`Invalid Tunnel provider: ${config.tunnelProvider}`);
+            }
+            catch(e){
+                logger.worker().error(`Tunnel error: ${e}`);
             }
     
             /**
@@ -177,20 +182,26 @@ export class Worker extends Client {
                             __this.tunnels[localPort].status = TunnelStatus.Connected; // If no error it's now connected
 
                             logger.worker().debug(`Tunnel created on port ${localPort}: ${url} `);
+                            __this.server.tunnel.onEvent("tunnelCreated", url); // Send event
 
                             return context.return(__this.tunnels[localPort]); // Send success
                         }
                         else { // Alrady started
-                            logger.worker().debug(`Alredy started`);
+                            logger.worker().debug(`Tunnel error: Tunnel already started ${localPort}`);
+                            __this.server.tunnel.onError(`Tunnel error: Tunnel already started ${localPort}`); // Send error to server
+
                             return context.return(__this.tunnels[localPort]);
                         }
                     }
                     catch(e) {
                         logger.worker().error(e);
+                        __this.server.tunnel.onError(`Tunnel error: ${e}`); // Send error to server
+
                         return context.return(null);
-                        //TODO SEND ERROR
                     }
                 }
+                else
+                    __this.server.tunnel.onError(`Tunnel error: provider not setup!`); // Send error to server
             },
             /**
              * Stop the previously crated tunnel
@@ -222,22 +233,28 @@ export class Worker extends Client {
                                 __this.tunnels[localPort].status = TunnelStatus.Stopped;
 
                                 logger.worker().debug(`Tunnel stopped on port ${localPort}`);
+                                __this.server.tunnel.onEvent("tunnelStopped", localPort); // Send event
 
                                 return context.return(1);
                             }
                             // Else never created
                             else {
-                                logger.worker().debug(`No tunnel exists on port ${localPort}`)
+                                logger.worker().debug(`Tunnel error: No tunnel exists on port ${localPort}`);
+                                __this.server.tunnel.onError(`Tunnel error: No tunnel exists on port ${localPort}`); // Send error to server
+
                                 return context.return(0);
                             }
                         }
                     }
                     catch(e) {
                         logger.worker().error(e);
+                        __this.server.tunnel.onError(`Tunnel error: ${e}`); // Send error to server
+
                         return context.return(0);
-                        //TODO SEND ERROR
                     }
                 }
+                else
+                    __this.server.tunnel.onError(`Tunnel error: provider not setup!`); // Send error to server
             },
             /**
              * Get ALL the tunnels opened on the worker
@@ -341,7 +358,7 @@ export class Worker extends Client {
          * @param {string} eventName
          * @param data
          */
-        onServerEvent: (eventName: string, callback: (server: any, data: any) => any) => {
+        onServerEvent: (eventName: string, callback: (server: any, ...data: any) => any) => {
             this.taskEvent.on("serverEvent:" + eventName, callback);
         },
     };

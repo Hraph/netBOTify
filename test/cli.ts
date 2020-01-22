@@ -24,8 +24,8 @@ cli.customize.addCommand("helloWorkers", "Get screenshot", (args, endCommand) =>
     description: "Say goodbye"
 }]);
 
-cli.task.onTaskAnyEvent((eventName: string, data: any, identifier: ClientIdentifier, workerToken: string) => {
-    cli.logger().debug("Got event %s", eventName);
+cli.events.onAnyEvent((eventName: string, data: any, identifier: ClientIdentifier, workerToken: string) => {
+    cli.logger().debug("Got event %s: %s", eventName, data);
 });
 
 cli.task.onTaskResult((data: any, identifier: ClientIdentifier, workerToken: string) => {
