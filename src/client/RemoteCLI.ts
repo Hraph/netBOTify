@@ -288,7 +288,22 @@ export class RemoteCLI extends Client {
                 .action((args: any, callback: Function) => {
                     __this._executeDistantCommand(__this.server.tunnel.stop, args.token, args.port)
                         .then((result: any) => {
-                            vorpal.log("%d/%d tunnel%s stopped", result.success, result.total, (result.total >= 2) ? "s" : "");
+                            vorpal.log("%d tunnel%s stopped", result.success, (result.success >= 2) ? "s" : "");
+
+                            callback();
+                        })
+                        .catch(__this._serverInvalidCommandError);
+                });
+
+            /**
+             * Kill all tunnels on worker
+             */
+            vorpal
+                .command('tunnel kill <token>', 'Stop a tunnel on a worker.')
+                .action((args: any, callback: Function) => {
+                    __this._executeDistantCommand(__this.server.tunnel.stop, args.token, 0, true)
+                        .then((result: any) => {
+                            vorpal.log("%d tunnel%s stopped", result.success, (result.success >= 2) ? "s" : "");
 
                             callback();
                         })

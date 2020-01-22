@@ -27,10 +27,20 @@ export class WorkerTunnelNgrok implements WorkerTunnel {
         }
     }
 
+    /**
+     * Update the provider config
+     * @param config
+     */
     setConfig(config: {}) {
         Object.assign(this.config, config);
     };
 
+    /**
+     * Create the tunnel to localPort
+     * @param localPort
+     * @param isTcp
+     * @param onStatusChanged
+     */
     async connect (localPort: number, isTcp: boolean, onStatusChanged: (status: TunnelStatus) => void) {
         if (this.ngrok) {
             let config = {
@@ -51,13 +61,27 @@ export class WorkerTunnelNgrok implements WorkerTunnel {
             return this.ngrok.connect(config);
         }
     }
+
+    /**
+     * Disconnect the tunnel to url
+     * @param url
+     */
     async disconnect (url: string = "") {
         if (this.ngrok)
             return this.ngrok.disconnect(url);
     }
+
+    /**
+     * Disconnect all tunnel opened
+     */
     async disconnectAll() {
         return this.disconnect();
     }
 
-
+    /**
+     * Kill the Ngrok process
+     */
+    async kill() {
+        return this.ngrok.kill();
+    }
 }

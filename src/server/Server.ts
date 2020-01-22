@@ -524,23 +524,21 @@ export class Server {
              * @param token
              * @param localPort
              */
-            stop: async function(token: string, localPort: number) {
+            stop: async function(token: string, localPort: number, killAll: boolean = false) {
                 let clientPromises: any[] = [];
                 let success: number = 0;
-                let total: number = 0;
                 let context = this;
                 context.async = true; //Define an asynchronous return
 
                 __this.clients.filter(client => client.clientType == ClientType.Worker && client.token === token)
                     .forEach(client => {
-                        // Stop send boolean for success
-                        clientPromises.push(promiseTimeout(30000, __this.server.getClient(client.clientId).tunnel.stop(localPort)).then((result: any) => { // timeout 30 sec
-                            if (result)
-                                ++success;
+                        // Stop send the number of succeed stops
+                        clientPromises.push(promiseTimeout(30000, __this.server.getClient(client.clientId).tunnel.stop(localPort, killAll)).then((result: any) => { // timeout 30 sec
+                            if (!isNaN(result))
+                                success+=result;
                         }).catch((err: any) => {
                             logger.server().error("Error while stopping worker tunnel", err);
                         }));
-                        ++total;
                     });
 
                 Promise.all(clientPromises).catch((e: any) => { // Wait all launches to finish
@@ -548,8 +546,7 @@ export class Server {
                     return []; // Return a value allowing the .then to be called
                 }).then(() => { // Send success anyway even if failed
                     context.return({
-                        success: success,
-                        total: total
+                        success: success
                     });
                 });
             },

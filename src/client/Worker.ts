@@ -148,6 +148,11 @@ export class Worker extends Client {
          * Action for Tunnel
          */
         this.client.exports.tunnel = {
+            /**
+             * Create a tunnel to the localPort using the configured provider
+             * @param localPort
+             * @param isTcp
+             */
             create: async function (localPort: number, isTcp: boolean = true) {
                 //this.serverProxy is injected by eureca
                 let context = this;
@@ -186,29 +191,44 @@ export class Worker extends Client {
                     }
                 }
             },
-            stop: async function(localPort: number) {
+            /**
+             * Stop the previously crated tunnel
+             * @param localPort
+             */
+            stop: async function(localPort: number, killAll: boolean = false) {
                 //this.serverProxy is injected by eureca
                 let context = this;
                 context.async = true; //Define an asynchronous return
 
                 if (__this.tunnelProvider) {
                     try {
-                        // Tunnel exist / has already been connected and url exist and not empty
-                        if (__this.tunnels.hasOwnProperty(localPort) && __this.tunnels[localPort].status != TunnelStatus.Stopped && __this.tunnels[localPort].url) {
-                            await __this.tunnelProvider.disconnect(__this.tunnels[localPort].url);
+                        if (killAll){ // Remove all tunnels
+                            await __this.tunnelProvider.kill();
+                            let count = Object.keys(__this.tunnels).length;
+                            __this.tunnels = [];
 
-                            // Erase tunnel
-                            __this.tunnels[localPort].url = "";
-                            __this.tunnels[localPort].status = TunnelStatus.Stopped;
+                            logger.worker().debug(`All tunnels killed`);
 
-                            logger.worker().debug(`Tunnel stopped on port ${localPort}`);
-
-                            return context.return(true);
+                            return context.return(count);
                         }
-                        // Else never created
                         else {
-                            logger.worker().debug(`No tunnel exists on port ${localPort}`)
-                            return context.return(false);
+                            // Tunnel exist / has already been connected and url exist and not empty
+                            if (__this.tunnels.hasOwnProperty(localPort) && __this.tunnels[localPort].status != TunnelStatus.Stopped && __this.tunnels[localPort].url) {
+                                await __this.tunnelProvider.disconnect(__this.tunnels[localPort].url);
+
+                                // Erase tunnel
+                                __this.tunnels[localPort].url = "";
+                                __this.tunnels[localPort].status = TunnelStatus.Stopped;
+
+                                logger.worker().debug(`Tunnel stopped on port ${localPort}`);
+
+                                return context.return(1);
+                            }
+                            // Else never created
+                            else {
+                                logger.worker().debug(`No tunnel exists on port ${localPort}`)
+                                return context.return(0);
+                            }
                         }
                     }
                     catch(e) {
@@ -217,6 +237,9 @@ export class Worker extends Client {
                     }
                 }
             },
+            /**
+             * Get ALL the tunnels opened on the worker
+             */
             get: function() {
                 //this.serverProxy is injected by eureca
                 let context = this;

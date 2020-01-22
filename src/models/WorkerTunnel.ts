@@ -21,4 +21,5 @@ export interface WorkerTunnel {
     connect: (localPort: number, isTcp: boolean, onStatusChanged: (status: TunnelStatus) => void) => Promise<any>,
     disconnect: (url: string) => Promise<any>,
     disconnectAll: () => Promise<any>
+    kill: () => Promise<any>
 }
