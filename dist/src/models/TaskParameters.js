@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-class GlobalParameter {
+class TaskParameterItem {
     constructor(key, defaultValue, value = null) {
         this.key = key;
         this.defaultValue = defaultValue;
@@ -11,5 +11,5 @@ class GlobalParameter {
         this.message = this.key.charAt(0).toUpperCase() + this.key.slice(1);
     }
 }
-exports.GlobalParameter = GlobalParameter;
-//# sourceMappingURL=GlobalParameter.js.map
+exports.TaskParameterItem = TaskParameterItem;
+//# sourceMappingURL=TaskParameters.js.map

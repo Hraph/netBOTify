@@ -8,6 +8,6 @@ __export(require("./client/RemoteCLI"));
 __export(require("./server/Server"));
 __export(require("./client/Worker"));
 __export(require("./models/ClientIdentifier"));
-__export(require("./models/GlobalParameter"));
-__export(require("./logger"));
+__export(require("./models/TaskParameters"));
+__export(require("./utils/logger"));
 //# sourceMappingURL=index.js.map

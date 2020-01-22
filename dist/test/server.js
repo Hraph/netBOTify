@@ -9,11 +9,11 @@ let server = new src_1.Server({
     intervalPrintStatus: 60,
     logger: 'debug'
 });
-server.addGlobalParameter("id", "12345678");
-server.onTaskEvent("hello", (data, client) => {
+server.task.addTaskParameter("id", "12345678");
+server.task.onTaskEvent("hello", (data, client) => {
     console.log("Got event Hello: ", data);
 });
-server.onWorkerGetIdentity(() => {
+server.task.onTaskIdentityAcquired(() => {
     return new Promise(((resolve, reject) => {
         let identity = {
             id: "ID",
@@ -24,7 +24,7 @@ server.onWorkerGetIdentity(() => {
         resolve(identity);
     }));
 });
-server.onWorkerReleaseIdentity((identity => {
+server.task.onTaskIdentityReleased((identity => {
     return new Promise(((resolve, reject) => {
         console.log("Releasing identity: " + identity);
         resolve();

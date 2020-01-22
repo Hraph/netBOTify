@@ -34,4 +34,35 @@ function promiseAllTimeout(ms, promiseArray) {
     });
 }
 exports.promiseAllTimeout = promiseAllTimeout;
+function reduceObjectToAllowedKeys(object, keys) {
+    return Object.keys(object)
+        .filter(key => keys.includes(key))
+        .reduce((obj, key) => {
+        obj[key] = object[key];
+        return obj;
+    }, {});
+}
+exports.reduceObjectToAllowedKeys = reduceObjectToAllowedKeys;
+function objectGroupByPropertyAndCount(objectArray, prop) {
+    let gbResult = objectGroupByProperty(objectArray, prop);
+    if (Object.keys(gbResult).length > 0) {
+        let gbResultReduced = [];
+        Object.keys(gbResult).forEach(x => {
+            let obj = {};
+            obj[prop] = x;
+            obj["values"] = gbResult[x].length;
+            gbResultReduced.push(obj);
+        });
+        return gbResultReduced;
+    }
+    return [];
+}
+exports.objectGroupByPropertyAndCount = objectGroupByPropertyAndCount;
+function objectGroupByProperty(obj, prop) {
+    return obj.reduce(function (rv, x) {
+        (rv[x[prop]] = rv[x[prop]] || []).push(x);
+        return rv;
+    }, {});
+}
+exports.objectGroupByProperty = objectGroupByProperty;
 //# sourceMappingURL=utils.js.map

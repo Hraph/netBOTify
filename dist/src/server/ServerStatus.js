@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const logger_1 = require("../logger");
+const logger_1 = require("../utils/logger");
 const ClientIdentifier_1 = require("../models/ClientIdentifier");
 class ServerStatus {
     static getServerStatusData(server) {

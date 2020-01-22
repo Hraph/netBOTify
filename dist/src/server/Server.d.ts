@@ -1,13 +1,13 @@
 import { ClientIdentifier } from "../models/ClientIdentifier";
-import { GlobalParameter } from "../models/GlobalParameter";
+import { TaskParameterItem } from "../models/TaskParameters";
 import { ServerConfig } from "../models/ServerConfig";
-import { GetIdentityCallback, ReleaseIdentityCallback } from "../models/WorkerIdentity";
+import { GetIdentityCallback, ReleaseIdentityCallback } from "../models/TaskIdentity";
 import { Logger } from "log4js";
 export declare class Server {
     clients: ClientIdentifier[];
     private config;
     private server;
-    private globalParameters;
+    private taskParameters;
     private serverEvent;
     private subscribedCLISToEvents;
     private saveLogToDirectory;
@@ -17,25 +17,30 @@ export declare class Server {
     private filteredClientIdentifierCLIKeys;
     private filteredClientIdentifierWorkerKeys;
     constructor(config?: ServerConfig);
-    private _reduceObjectToAllowedKeys;
     private _internalActions;
-    private _releaseWorkerIdentity;
+    private _releaseTaskIdentity;
     private _saveTaskParameters;
     private _saveWorkerLog;
     private _saveWorkerResult;
     private _saveWorkerB64Image;
     connect(): void;
-    onTaskResult(callback: (result: any, identifier: ClientIdentifier, workerProxy: any) => void): void;
-    onTaskEvent(eventName: string, callback: (data: any, identifier: ClientIdentifier, workerProxy: any) => void): void;
-    onTaskAnyEvent(callback: (eventName: string, data: any, identifier: ClientIdentifier, workerProxy: any) => void): void;
-    onTaskEnded(callback: (data: any, identifier: ClientIdentifier, workerProxy: any) => void): void;
-    addGlobalParameter(key: string, defaultValue: any, value?: any): void;
-    getGlobalParameter(key: string): false | GlobalParameter<any>;
-    addServerAction(name: string, callback: Function): void;
-    declareWorkerTask(name: string): void;
-    onWorkerGetIdentity(callback: GetIdentityCallback): void;
-    onWorkerReleaseIdentity(callback: ReleaseIdentityCallback): void;
-    sendEventToSubscribedCLIs(eventName: string, data: any, workerToken: string): void;
-    sendEventToWorkers(eventName: string, data: any, token?: any): void;
     logger(): Logger;
+    task: {
+        onTaskResult: (callback: (result: any, identifier: ClientIdentifier, workerProxy: any) => void) => void;
+        onTaskEvent: (eventName: string, callback: (data: any, identifier: ClientIdentifier, workerProxy: any) => void) => void;
+        onTaskAnyEvent: (callback: (eventName: string, data: any, identifier: ClientIdentifier, workerProxy: any) => void) => void;
+        onTaskEnded: (callback: (data: any, identifier: ClientIdentifier, workerProxy: any) => void) => void;
+        addTaskParameter: (key: string, defaultValue: any, value?: any) => void;
+        getTaskParameter: (key: string) => false | TaskParameterItem<any>;
+        onTaskIdentityAcquired: (callback: GetIdentityCallback) => void;
+        onTaskIdentityReleased: (callback: ReleaseIdentityCallback) => void;
+    };
+    events: {
+        sendEventToSubscribedCLIs: (eventName: string, data: any, workerToken: string) => void;
+        sendEventToWorkers: (eventName: string, data: any, token?: any) => void;
+    };
+    customize: {
+        addServerAction: (name: string, callback: Function) => void;
+        registerWorkerTask: (name: string) => void;
+    };
 }
