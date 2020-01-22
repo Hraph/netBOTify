@@ -1,4 +1,4 @@
-import {TunnelProvider, WorkerTunnel} from "../models/WorkerTunnel";
+import {TunnelProvider, TunnelStatus, WorkerTunnel} from "../models/WorkerTunnel";
 import {logger} from "..";
 
 
@@ -13,32 +13,50 @@ export class WorkerTunnelNgrok implements WorkerTunnel {
     constructor(config: {} = {}) {
         this.setConfig(config);
 
-        import("ngrok").then(ngrok => {
-            this.ngrok = ngrok;
-
+        try {
+            let ngrok = require("ngrok"); // Synchronous load
             if (typeof ngrok.connect == "undefined") { // Check loaded dependency
                 logger.worker().fatal("Dependency ngrok is not installed!");
             }
-        }).catch(() => {
+            else {
+                this.ngrok = ngrok; // Save dependency
+            }
+        }
+        catch (e) {
             logger.worker().fatal("Dependency ngrok is not installed!");
-        });
+        }
     }
 
     setConfig(config: {}) {
-        console.log(this.config);
         Object.assign(this.config, config);
-        console.log(this.config);
     };
 
-    async connect (localPort: number, isTcp: boolean, onConnected: Function, onClosed: Function) {
+    async connect (localPort: number, isTcp: boolean, onStatusChanged: (status: TunnelStatus) => void) {
         if (this.ngrok) {
+            let config = {
+                proto: (isTcp) ? "tcp" : "http",
+                addr: localPort,
+                onStatusChange: (status: string) => {
+                    if (status == "connected")
+                        onStatusChanged(TunnelStatus.Connected);
+                    else
+                        onStatusChanged(TunnelStatus.Disconnected);
+                },
+                onLogEvent: (data: any) => {
+                    logger.worker().trace(data);
+                }
+            };
+            Object.assign(config, this.config); // Merge config
+
+            return this.ngrok.connect(config);
         }
     }
-    async disconnect (localPort: number) {
-
+    async disconnect (url: string = "") {
+        if (this.ngrok)
+            return this.ngrok.disconnect(url);
     }
     async disconnectAll() {
-
+        return this.disconnect();
     }
 
 

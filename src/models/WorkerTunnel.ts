@@ -1,6 +1,7 @@
 export enum TunnelStatus {
-    Closed = 0,
-    Connected
+    Stopped = "stopped", // Never connected
+    Disconnected = "disconnected",
+    Connected = "connected"
 }
 
 export enum TunnelProvider {
@@ -9,6 +10,7 @@ export enum TunnelProvider {
 
 export interface Tunnel {
     localPort: number,
+    url: string,
     status: TunnelStatus,
     provider: TunnelProvider
 }
@@ -16,7 +18,7 @@ export interface Tunnel {
 export interface WorkerTunnel {
     type: TunnelProvider,
     setConfig: (config: {}) => void,
-    connect: (localPort: number, isTcp: boolean, onConnected: Function, onClosed: Function) => Promise<any>,
-    disconnect: (localPort: number) => Promise<any>,
+    connect: (localPort: number, isTcp: boolean, onStatusChanged: (status: TunnelStatus) => void) => Promise<any>,
+    disconnect: (url: string) => Promise<any>,
     disconnectAll: () => Promise<any>
 }

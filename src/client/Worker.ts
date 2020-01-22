@@ -1,11 +1,11 @@
 import {Client} from "./Client";
 import {TaskStatus} from "../models/ClientIdentifier";
 import {logger} from "../utils/logger";
-import {TaskParameterItem, TaskParameterList} from "../models/TaskParameters";
+import {TaskParameterList} from "../models/TaskParameters";
 import {WorkerConfig} from "../models/WorkerConfig";
 import {TaskIdentity} from "../models/TaskIdentity";
 import {Logger} from "log4js";
-import {Tunnel, TunnelProvider, WorkerTunnel} from "../models/WorkerTunnel";
+import {Tunnel, TunnelProvider, TunnelStatus, WorkerTunnel} from "../models/WorkerTunnel";
 import {WorkerTunnelNgrok} from "./WorkerTunnels";
 
 const EventEmitter = require("events");
@@ -153,19 +153,76 @@ export class Worker extends Client {
                 let context = this;
                 context.async = true; //Define an asynchronous return
 
-                if (__this.tunnelProvider) {
-                    await __this.tunnelProvider.connect(localPort, isTcp, () => {
-                        //
-                    }, () => {
+                if (__this.tunnelProvider) { // Provider is set
+                    try {
+                        if (!__this.tunnels.hasOwnProperty(localPort)) // Create object
+                            __this.tunnels[localPort] = {
+                                localPort: localPort,
+                                url: "",
+                                provider: __this.tunnelProvider.type,
+                                status: TunnelStatus.Stopped
+                            };
 
-                    });
+                        if (__this.tunnels[localPort].status === TunnelStatus.Stopped) {
+                            let url = await __this.tunnelProvider.connect(localPort, isTcp, (status: TunnelStatus) => {
+                                __this.tunnels[localPort].status = status; // Change status on reconnect
+                            });
+
+                            __this.tunnels[localPort].url = url; // Save url
+                            __this.tunnels[localPort].status = TunnelStatus.Connected; // If no error it's now connected
+
+                            logger.worker().debug(`Tunnel created on port ${localPort}: ${url} `);
+
+                            return context.return(__this.tunnels[localPort]); // Send success
+                        }
+                        else { // Alrady started
+                            logger.worker().debug(`Alredy started`);
+                            return context.return(__this.tunnels[localPort]);
+                        }
+                    }
+                    catch(e) {
+                        logger.worker().error(e);
+                        //TODO SEND ERROR
+                    }
                 }
             },
-            destroy: (localPort: number) => {
+            stop: async function(localPort: number) {
+                //this.serverProxy is injected by eureca
+                let context = this;
+                context.async = true; //Define an asynchronous return
 
+                if (__this.tunnelProvider) {
+                    try {
+                        // Tunnel exist / has already been connected and url exist and not empty
+                        if (__this.tunnels.hasOwnProperty(localPort) && __this.tunnels[localPort].status != TunnelStatus.Stopped && __this.tunnels[localPort].url) {
+                            await __this.tunnelProvider.disconnect(__this.tunnels[localPort].url);
+
+                            // Erase tunnel
+                            __this.tunnels[localPort].url = "";
+                            __this.tunnels[localPort].status = TunnelStatus.Stopped;
+
+                            logger.worker().debug(`Tunnel stopped on port ${localPort}`);
+
+                            return context.return(true);
+                        }
+                        // Else never created
+                        else {
+                            logger.worker().debug(`No tunnel exists on port ${localPort}`)
+                            return context.return(false);
+                        }
+                    }
+                    catch(e) {
+                        logger.worker().error(e);
+                        //TODO SEND ERROR
+                    }
+                }
             },
-            get: () => {
+            get: function() {
+                //this.serverProxy is injected by eureca
+                let context = this;
+                context.async = true; //Define an asynchronous return
 
+                return context.return(Object.values(__this.tunnels)); // Send an array of value without keys
             }
         };
 

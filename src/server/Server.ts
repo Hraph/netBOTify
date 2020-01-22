@@ -3,11 +3,10 @@ import {logger} from "../utils/logger";
 import {TaskParameterItem, TaskParameterList} from "../models/TaskParameters";
 import {ServerConfig} from "../models/ServerConfig";
 import {ServerStatus} from './ServerStatus';
-import { Server as EurecaServer } from 'eureca.io';
+import {Server as EurecaServer} from 'eureca.io';
 import {GetIdentityCallback, ReleaseIdentityCallback, TaskIdentity} from "../models/TaskIdentity";
 import {Logger} from "log4js";
-import {promiseAllTimeout, promiseTimeout, reduceObjectToAllowedKeys} from "../utils/utils";
-import {Instance} from "../Instance";
+import {promiseTimeout, reduceObjectToAllowedKeys} from "../utils/utils";
 
 const express = require('express')
     , app = express()
@@ -87,7 +86,7 @@ export class Server {
                     next();
                 },
                 prefix: "nbfy",
-                allow: ["task.launch", "task.stop", "task.status.get", "onEvent"]
+                allow: ["task.launch", "task.stop", "task.status.get", "tunnel.create", "tunnel.stop", "tunnel.get", "onEvent"]
             });
             this.server.attach(webServer); // Attach express to eureca.io
     
@@ -197,7 +196,7 @@ export class Server {
                         if (__this.identityCallback != null) {
 
                             // Get identity
-                            clientPromises.push(promiseTimeout(10000, __this.identityCallback().then((identity: TaskIdentity) => { // timeout 10 sec
+                            clientPromises.push(promiseTimeout(30000, __this.identityCallback().then((identity: TaskIdentity) => { // timeout 10 sec
 
                                 // Get clientIdentifier
                                 let clientIdentifier: any = __this.clients.find(x => x.clientId == client.clientId);
@@ -214,7 +213,7 @@ export class Server {
 
                         // No identity
                         else {
-                            clientPromises.push(promiseTimeout(10000, __this.server.getClient(client.clientId).task.launch(null, __this.taskParameters)).then(() => ++success).catch((err: any) => {
+                            clientPromises.push(promiseTimeout(30000, __this.server.getClient(client.clientId).task.launch(null, __this.taskParameters)).then(() => ++success).catch((err: any) => {
                                 //logger.server().error("Error while getting identity", err);
                                 ++errors; // Increments errors
                             })); // Launch task without identity timeout 10 sec
@@ -230,7 +229,7 @@ export class Server {
                     logger.server().error("Unable to launch task", e);
                     ++errors; // Increments errors
                     return []; // Return a value allowing the .then to be called
-                }).then((results: any) => { // Send success anyway even if failed
+                }).then(() => { // Send success anyway even if failed
                     context.return({
                         success: success,
                         total: total,
@@ -271,7 +270,7 @@ export class Server {
                 }).forEach(client => { // Get Workers clients ONLY
                     if ((totalPromised < limit || limit == 0) && ((typeof args.force != "undefined" && args.force) || client.taskStatus != TaskStatus.Idle)){ // Stop task only if task is not currently stopped and limit is set and not reached
                         clientPromises.push(
-                            promiseTimeout(10000, __this.server.getClient(client.clientId).task.stop()) // timeout 10 sec
+                            promiseTimeout(30000, __this.server.getClient(client.clientId).task.stop()) // timeout 10 sec
                                 .catch((e: any) => { // Catch directly error
                                     //logger.server().error("Unable to stop task ", e);
                                     ++errors; // Increments errors
@@ -457,7 +456,7 @@ export class Server {
                     // Process where
                     return (whereKey != null && whereFilter != null) ? client[whereKey] == whereFilter : true;
                 }).forEach(client => {
-                    clientPromises.push(promiseTimeout(20000, __this.server.getClient(client.clientId).task.status.get()).then((status: any) => { // timeout 20 sec
+                    clientPromises.push(promiseTimeout(30000, __this.server.getClient(client.clientId).task.status.get()).then((status: any) => { // timeout 20 sec
                         if (status != null)
                             statuses.push(status);
                         ++success;
@@ -473,13 +472,118 @@ export class Server {
                     logger.server().error("Error while getting worker status", e);
                     ++errors; // Increments errors
                     return []; // Return a value allowing the .then to be called
-                }).then((results: any) => { // Send success anyway even if failed
+                }).then(() => { // Send success anyway even if failed
                     context.return({
                         statuses: statuses,
                         success: success,
                         total: total,
                         errors: errors
                     });
+                });
+            }
+        };
+
+        /**
+         * Action for Tunnel
+         */
+        this.server.exports.tunnel = {
+            /**
+             * Create a tunnel on the worker
+             * @param token
+             * @param localPort
+             * @param isTcp
+             */
+            create: async function (token: string, localPort: number, isTcp: boolean = true) {
+                let clientPromises: any[] = [];
+                let results: any[] = [];
+                let context = this;
+                context.async = true; //Define an asynchronous return
+
+                if (!token)
+                    return;
+
+                __this.clients.filter(client => client.clientType == ClientType.Worker && client.token === token)
+                    .forEach(client => {
+                        clientPromises.push(promiseTimeout(30000, __this.server.getClient(client.clientId).tunnel.create(localPort, isTcp)).then((result: any) => { // timeout 30 sec
+                            if (result != null)
+                                results.push(result);
+                        }).catch((err: any) => {
+                            logger.server().error("Error while creating worker tunnel", err);
+                        }));
+                    });
+
+                Promise.all(clientPromises).catch((e: any) => { // Wait all launches to finish
+                    logger.server().error("Error while creating worker tunnel", e);
+                    return []; // Return a value allowing the .then to be called
+                }).then(() => { // Send success anyway even if failed
+                    context.return(results);
+                });
+            },
+            /**
+             * Stop a tunnel on the worker
+             * @param token
+             * @param localPort
+             */
+            stop: async function(token: string, localPort: number) {
+                let clientPromises: any[] = [];
+                let success: number = 0;
+                let total: number = 0;
+                let context = this;
+                context.async = true; //Define an asynchronous return
+
+                __this.clients.filter(client => client.clientType == ClientType.Worker && client.token === token)
+                    .forEach(client => {
+                        // Stop send boolean for success
+                        clientPromises.push(promiseTimeout(30000, __this.server.getClient(client.clientId).tunnel.stop(localPort)).then((result: any) => { // timeout 30 sec
+                            if (result)
+                                ++success;
+                        }).catch((err: any) => {
+                            logger.server().error("Error while stopping worker tunnel", err);
+                        }));
+                        ++total;
+                    });
+
+                Promise.all(clientPromises).catch((e: any) => { // Wait all launches to finish
+                    logger.server().error("Error while stopping worker tunnel", e);
+                    return []; // Return a value allowing the .then to be called
+                }).then(() => { // Send success anyway even if failed
+                    context.return({
+                        success: success,
+                        total: total
+                    });
+                });
+            },
+            /**
+             * Get all tunnels created on the worker
+             * @param workerToken
+             */
+            get: function (token: string) {
+                let clientPromises: any[] = [];
+                let results: any[] = [];
+
+                //this.serverProxy is injected by eureca
+                let context = this;
+                context.async = true; //Define an asynchronous return
+
+                if (!token)
+                    return;
+
+                __this.clients.filter(client => client.clientType == ClientType.Worker && client.token.startsWith(token))
+                    .forEach(client => {
+                        // Get send an array of tunnels so we need to concat it
+                        clientPromises.push(promiseTimeout(10000,__this.server.getClient(client.clientId).tunnel.get()).then((data: any) => {
+                            if (Array.isArray(data))
+                                results = results.concat(data);
+                        }).catch((err: any) => {
+                            logger.server().error("Error while getting worker tunnel", err);
+                        }));
+                    });
+
+                Promise.all(clientPromises).catch((err) => {
+                    logger.server().error("Error while getting worker tunnels", err);
+                    return []; // Return a value allowing the .then to be called
+                }).then(() => { // Send success anyway even if failed
+                    context.return(results);
                 });
             }
         };

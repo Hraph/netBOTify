@@ -114,7 +114,7 @@ export class RemoteCLI extends Client {
              * Task status command
              */
             vorpal
-                .command('status [token]', 'Get status from worker')
+                .command('task status [token]', 'Get status from worker')
                 .option('-w, --where <filter>', 'Find a certain value of a property')
                 .option('-g, --groupby <property>', 'Group result by a property')
                 .action(function(args: any, callback: Function) {
@@ -152,7 +152,7 @@ export class RemoteCLI extends Client {
              * Launch task command
              */
             vorpal
-                .command('launch [token]', 'Launch the task on workers.')
+                .command('task launch [token]', 'Launch the task on workers.')
                 .option('-f, --force', "Force sending start even if it's already launched")
                 .option('-l, --limit <amount>', 'Restrict to a certain amount of workers')
                 .option('-w, --where <filter>', 'Find a certain value of a property')
@@ -205,7 +205,7 @@ export class RemoteCLI extends Client {
              * Stop task command
              */
             vorpal
-                .command('stop [token]', 'Stop the task on workers.')
+                .command('task stop [token]', 'Stop the task on workers.')
                 .option('-f, --force', "Force sending stop even if it's already stopped")
                 .option('-l, --limit <amount>', 'Restrict to a certain amount of workers')
                 .option('-w, --where <filter>', 'Find a certain value of a property')
@@ -239,12 +239,12 @@ export class RemoteCLI extends Client {
                     });
 
                 });
-    
+
             /**
              * Parameters setup command
              */
             vorpal
-                .command('parameters', 'Manage task parameters sent to all workers.')
+                .command('task parameters', 'Manage task parameters sent to all workers.')
                 .option("-r, --reload", "Erase and reload the current parameters from the server.")
                 .option("-s, --save", "Save parameters value on the server now.")
                 .action(function(args: any, callback: Function) {
@@ -262,7 +262,56 @@ export class RemoteCLI extends Client {
                             callback();
                     });
                 });
-    
+
+            /**
+             * Create a tunnel on worker
+             */
+            vorpal
+                .command('tunnel create <token> <port>', 'Create a tunnel on a worker.')
+                .option('--http', "Use http protocol")
+                .action((args: any, callback: Function) => {
+                    __this._executeDistantCommand(__this.server.tunnel.create, args.token, args.port, args.options.http ? false : true)
+                        .then((result: any) => {
+                            vorpal.log("%d tunnel created for the worker %s", result.length, args.token);
+                            vorpal.log(cTable.getTable(result));
+
+                            callback();
+                        })
+                        .catch(__this._serverInvalidCommandError);
+                });
+
+            /**
+             * Stop a tunnel on worker
+             */
+            vorpal
+                .command('tunnel stop <token> <port>', 'Stop a tunnel on a worker.')
+                .action((args: any, callback: Function) => {
+                    __this._executeDistantCommand(__this.server.tunnel.stop, args.token, args.port)
+                        .then((result: any) => {
+                            vorpal.log("%d/%d tunnel%s stopped", result.success, result.total, (result.total >= 2) ? "s" : "");
+
+                            callback();
+                        })
+                        .catch(__this._serverInvalidCommandError);
+                });
+
+            /**
+             * List of opened tunnels on worker
+             */
+            vorpal
+                .command('tunnel get <token>', 'Get tunnels on a worker.')
+                .action((args: any, callback: Function) => {
+                    __this._executeDistantCommand(__this.server.tunnel.get, args.token)
+                        .then((result: any) => {
+                            vorpal.log("%d tunnel%s for the worker %s", result.length, (result.length >= 2) ? "s" : "", args.token);
+
+                            vorpal.log(cTable.getTable(result));
+
+                            callback();
+                        })
+                        .catch(__this._serverInvalidCommandError);
+                });
+
             /**
              * List of connected workers command
              */
