@@ -6,8 +6,8 @@ export * from './client/Worker'
 
 // Models
 export * from './models/ClientIdentifier'
-export * from './models/WorkerIdentity'
-export * from './models/GlobalParameter'
+export * from './models/TaskIdentity'
+export * from './models/TaskParameters'
 
 // Logger
-export * from './logger'
+export * from './utils/logger'

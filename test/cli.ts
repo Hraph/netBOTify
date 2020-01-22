@@ -11,12 +11,12 @@ let cli = new RemoteCLI({
     logger: 'debug'
 });
 
-cli.addCommand("test", "Write a test", (args: any, callback: Function) => {
+cli.customize.addCommand("test", "Write a test", (args: any, callback: Function) => {
     cli.logger().debug("TEST");
     callback();
 });
 
-cli.addCommand("helloWorkers", "Get screenshot", (args, endCommand) => {
+cli.customize.addCommand("helloWorkers", "Get screenshot", (args, endCommand) => {
     cli.getServerProxy().cli.sendEventToWorkers("workerSayHello", null); //Send event
     endCommand();
 }, [{
@@ -24,10 +24,10 @@ cli.addCommand("helloWorkers", "Get screenshot", (args, endCommand) => {
     description: "Say goodbye"
 }]);
 
-cli.onTaskAnyEvent((eventName: string, data: any, identifier: ClientIdentifier, workerToken: string) => {
+cli.task.onTaskAnyEvent((eventName: string, data: any, identifier: ClientIdentifier, workerToken: string) => {
     cli.logger().debug("Got event %s", eventName);
 });
 
-cli.onTaskResult((data: any, identifier: ClientIdentifier, workerToken: string) => {
+cli.task.onTaskResult((data: any, identifier: ClientIdentifier, workerToken: string) => {
     cli.logger().debug("Got result:", data);
 });

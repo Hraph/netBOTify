@@ -1,4 +1,4 @@
-import {WorkerIdentity} from "./WorkerIdentity";
+import {TaskIdentity} from "./TaskIdentity";
 
 export enum ClientType {
     Worker = 0,
@@ -23,7 +23,7 @@ export class ClientIdentifier {
     public taskStatus: TaskStatus = TaskStatus.Idle;
     public ip: any = null;
     public reconnect: number = 0;
-    public identity?: WorkerIdentity;
+    public identity?: TaskIdentity;
     [key: string]: any;
 
     constructor(groupId: string, instanceId: string) {
@@ -43,7 +43,7 @@ export class ClientIdentifier {
 
     /**
      * Get identity for workers ONLY
-     * @returns {WorkerIdentity}
+     * @returns {TaskIdentity}
      */
     public getWorkerIdentity(){
         return this.identity;
@@ -51,9 +51,9 @@ export class ClientIdentifier {
 
     /**
      * Set the identity wor workers ONLY
-     * @param {WorkerIdentity} identity
+     * @param {TaskIdentity} identity
      */
-    public setWorkerIdentity(identity: WorkerIdentity){
+    public setWorkerIdentity(identity: TaskIdentity){
         this.identity = identity;
     }
 }

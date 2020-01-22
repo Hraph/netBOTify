@@ -1,9 +1,10 @@
 import {Client} from "./Client";
 import {ClientIdentifier, ClientType, TaskStatus} from "../models/ClientIdentifier";
-import {logger} from "../logger";
-import {GlobalParameter, GlobalParameterList} from "../models/GlobalParameter";
+import {logger} from "../utils/logger";
+import {TaskParameterItem, TaskParameterList} from "../models/TaskParameters";
 import {RemoteCLIConfig} from "../models/RemoteCLIConfig";
 import {Logger} from "log4js";
+import {objectGroupByPropertyAndCount} from "../utils/utils";
 
 const EventEmitter = require("events"),
       vorpal = require('vorpal')(),
@@ -15,7 +16,7 @@ declare var require: any;
 
 export class RemoteCLI extends Client {
     private cliEvent: any;
-    private globalParameters: any = null;
+    private taskParameters: any = null;
     constructor(config: RemoteCLIConfig = {}){
         super(config); //Create client
 
@@ -83,7 +84,7 @@ export class RemoteCLI extends Client {
              * @param {string} token: The client od of the origin worker
              * @constructor
              */
-            this.client.exports.CLIOnEvent = function(eventName: string, data: any = null, token: string) {
+            this.client.exports.onEvent = function(eventName: string, data: any = null, token: string) {
                 logger.cli().trace("EVENT %s (%s)", eventName, token); //Print the event with a shorten client id
 
                 __this.cliEvent.emit("taskEvent", eventName, data, token); // Emit local event for any
@@ -103,7 +104,7 @@ export class RemoteCLI extends Client {
             vorpal
                 .command('ping', 'Ping the server.')
                 .action((args: any, callback: Function) => {
-                    __this._executeDistantCommand("ping").then((result: any) => {
+                    __this._executeDistantCommand(__this.server.ping, true).then((result: any) => {
                         vorpal.log(result);
                         callback();
                     });
@@ -126,13 +127,13 @@ export class RemoteCLI extends Client {
                         }
                     }
 
-                    __this._executeDistantCommand("statusTask", args.token, args.options)
+                    __this._executeDistantCommand(__this.server.task.status.get, args.token, args.options)
                         .then((result: any) => {
                             if (result.statuses != null && result.statuses.length > 0) { // Has result
 
                                 // Process groubpy
                                 if (args.options.groupby != null)
-                                    vorpal.log(cTable.getTable(__this._objectGroupByPropertyAndCount(result.statuses, args.options.groupby)));
+                                    vorpal.log(cTable.getTable(objectGroupByPropertyAndCount(result.statuses, args.options.groupby)));
 
                                 else
                                     vorpal.log(cTable.getTable(result.statuses));
@@ -159,7 +160,7 @@ export class RemoteCLI extends Client {
                     let setParametersCommandPromise = [];
                     
                     //Parameters has not been retrieved before: SET UP PARAMETERS
-                    if (__this.globalParameters == null) {
+                    if (__this.taskParameters == null) {
                         vorpal.log("Some global parameters has not been set!");
                         vorpal.log("----------------------------");
                         
@@ -189,7 +190,7 @@ export class RemoteCLI extends Client {
                             if (!result.continue) // Abort
                                 callback();
                             else // Confirm
-                                __this._executeDistantCommand("launchTask", __this.globalParameters, args.token, args.options)  //Execute task with parameters
+                                __this._executeDistantCommand(__this.server.task.launch, __this.taskParameters, args.token, args.options)  //Execute task with parameters
                                     .then((result: any) => {
                                         vorpal.log("%d worker's task launched of %d worker%s. %d error%s", result.success, result.total, (result.total >= 2) ? "s" : "", result.errors, (result.errors >= 2) ? "s" : "");
                                         callback();
@@ -229,7 +230,7 @@ export class RemoteCLI extends Client {
                         if (!result.continue) // Abort
                             callback();
                         else // Confirm
-                            __this._executeDistantCommand("stopTask", args.token, args.options)
+                            __this._executeDistantCommand(__this.server.task.stop, args.token, args.options)
                                 .then((result: any) => {
                                     vorpal.log("%d worker's task stopped of %d worker%s. %d error%s", result.success, result.total, (result.total >= 2) ? "s" : "", result.errors, (result.errors >= 2) ? "s" : "");
                                     callback();
@@ -243,14 +244,14 @@ export class RemoteCLI extends Client {
              * Parameters setup command
              */
             vorpal
-                .command('parameters', 'Manage global parameters sent to all workers.')
+                .command('parameters', 'Manage task parameters sent to all workers.')
                 .option("-r, --reload", "Erase and reload the current parameters from the server.")
                 .option("-s, --save", "Save parameters value on the server now.")
                 .action(function(args: any, callback: Function) {
                     // @ts-ignore: TS2683 'this' implicitly has type 'any' because it does not have a type annotation.
                     __this._setupTaskParameters(this, args.options.reload).then(() => {
                         if (args.options.save) {
-                            __this._executeDistantCommand("saveGlobalParameters", __this.globalParameters)
+                            __this._executeDistantCommand(__this.server.task.parameters.save, __this.taskParameters)
                                 .then((result: any) => {
                                     vorpal.log("Parameters saved on the server.");
                                     callback();
@@ -271,7 +272,7 @@ export class RemoteCLI extends Client {
                 .option('-g, --groupby <property>', 'Group result by a property')
                 .option('-c, --count', 'Count only')
                 .action((args: any, callback: Function) => {
-                    __this._executeDistantCommand("getWorkers", args.token)
+                    __this._executeDistantCommand(__this.server.cli.getWorkers, args.token)
                         .then((result: any) => {
                             // Process where
                             if (args.options.where){
@@ -293,7 +294,7 @@ export class RemoteCLI extends Client {
 
                             // Process grouby
                             if (!args.options.count && args.options.groupby)
-                                vorpal.log(cTable.getTable(__this._objectGroupByPropertyAndCount(result, args.options.groupby)));
+                                vorpal.log(cTable.getTable(objectGroupByPropertyAndCount(result, args.options.groupby)));
 
                             else if (!args.options.count && result.length > 0) // No options
                                 vorpal.log(cTable.getTable(result));
@@ -312,7 +313,7 @@ export class RemoteCLI extends Client {
                 .option('-g, --groupby <property>', 'Group result by a property')
                 .option('-c, --count', 'Count only')
                 .action((args: any, callback: Function) => {
-                    __this._executeDistantCommand("getCLIs", args.token)
+                    __this._executeDistantCommand(__this.server.cli.getCLIs, args.token)
                         .then((result: any) => {
                             // Process where
                             if (args.options.where){
@@ -334,7 +335,7 @@ export class RemoteCLI extends Client {
                             
                             // Process grouby
                             if (!args.options.count && args.options.groupby)
-                                vorpal.log(cTable.getTable(__this._objectGroupByPropertyAndCount(result, args.options.groupby)));
+                                vorpal.log(cTable.getTable(objectGroupByPropertyAndCount(result, args.options.groupby)));
                                 
                             else if (!args.options.count && result.length > 0) // No options
                                 vorpal.log(cTable.getTable(result));
@@ -350,7 +351,7 @@ export class RemoteCLI extends Client {
             vorpal
                 .command('subscribe', 'Subscribe to server worker events.')
                 .action((args: any, callback: Function) => {
-                    __this._executeDistantCommand("subscribe")
+                    __this._executeDistantCommand(__this.server.cli.subscribe)
                         .then((result: any) => {
                             vorpal.log("Subscribed to server events");
                             callback();
@@ -364,7 +365,7 @@ export class RemoteCLI extends Client {
             vorpal
                 .command('unsubscribe', 'Unsubscribe to server worker events.')
                 .action((args: any, callback: Function) => {
-                    __this._executeDistantCommand("unsubscribe")
+                    __this._executeDistantCommand(__this.server.cli.unsubscribe)
                         .then((result: any) => {
                             vorpal.log("Unsubscribed to server events");
                             callback();
@@ -391,16 +392,16 @@ export class RemoteCLI extends Client {
             let getTaskParametersPromise = []; //Save promises
 
             //Parameters has not been retrieved before or force reload
-            if (this.globalParameters == null || reloadAll) {
+            if (this.taskParameters == null || reloadAll) {
                 vorpal.log("Loading new parameters from server.");
-                getTaskParametersPromise.push(this._getServerGlobalParameters());
+                getTaskParametersPromise.push(this._getServerTaskParameters());
             }
           
             //Wait GetParameters function if request needed  
             Promise.all(getTaskParametersPromise).catch(reject).then(() => { 
                 //Parameters are retrieved: ready to ask values
                 
-                if (this.globalParameters == null || Object.keys(this.globalParameters).length === 0) {
+                if (this.taskParameters == null || Object.keys(this.taskParameters).length === 0) {
                     vorpal.log("No parameters to manage.");
                     vorpal.log("----------------------------");
                     resolve();
@@ -410,8 +411,8 @@ export class RemoteCLI extends Client {
                     let vorpalPrompts: any = [];
                         
                     //Ask value for each parameters
-                    for (let parameterKey in this.globalParameters) {
-                        let parameter = this.globalParameters[parameterKey];
+                    for (let parameterKey in this.taskParameters) {
+                        let parameter = this.taskParameters[parameterKey];
                         
                         vorpalPrompts.push({
                             type: "input",
@@ -422,15 +423,15 @@ export class RemoteCLI extends Client {
                     
                     vorpal.log("----------------------------");
 
-                    vorpal.log("Configuring " + Object.keys(this.globalParameters).length + " parameter(s):");
+                    vorpal.log("Configuring " + Object.keys(this.taskParameters).length + " parameter(s):");
                     
                     vorpalCommand.prompt(vorpalPrompts).then((answers: any) => {
                         vorpal.log("----------------------------");
                         
                         //Update parameters value
                         for (let answerKey in answers) {
-                            if (this.globalParameters.hasOwnProperty(answerKey) && answers[answerKey] !== "") //Parameter exist and not empty parameter
-                                this.globalParameters[answerKey].value = answers[answerKey];
+                            if (this.taskParameters.hasOwnProperty(answerKey) && answers[answerKey] !== "") //Parameter exist and not empty parameter
+                                this.taskParameters[answerKey].value = answers[answerKey];
                         }
                         
                         resolve();
@@ -446,10 +447,10 @@ export class RemoteCLI extends Client {
      * @returns {Promise<any>}
      * @private
      */
-    private _getServerGlobalParameters(){
+    private _getServerTaskParameters(){
         return new Promise((resolve, reject) => {
-            this.server.cli["getGlobalParameters"]().then((parameters: GlobalParameterList) => {
-                this.globalParameters = parameters;
+            this.server.task.parameters["get"]().then((parameters: TaskParameterList) => {
+                this.taskParameters = parameters;
                 resolve();
             }).catch(reject);
         })
@@ -462,10 +463,10 @@ export class RemoteCLI extends Client {
      * @returns {Promise<any>}
      * @private
      */
-    private _executeDistantCommand(commandName: string, ...parameters: any[]){
+    private _executeDistantCommand(command: Function, ...parameters: any[]){
         return new Promise((resolve, reject) => {
             try {
-                this.server.cli[commandName](...parameters).then((result: any) => {
+                command(...parameters).then((result: any) => {
                     resolve(result);
                 });
             }
@@ -473,43 +474,6 @@ export class RemoteCLI extends Client {
                 reject(e);
             }
         });
-    }
-
-    /**
-     * Group by an object array property and count occurrences
-     * @param {any[]} objectArray
-     * @param {string} prop
-     * @returns {any}
-     * @private
-     */
-    private _objectGroupByPropertyAndCount(objectArray: any[], prop: string){
-        let gbResult = this._objectGroupByProperty(objectArray, prop);
-
-        if (Object.keys(gbResult).length > 0){ // Has result: format
-            let gbResultReduced: any = [];
-
-            Object.keys(gbResult).forEach(x => { // Create value object
-                let obj: any = {};
-                obj[prop] = x;
-                obj["values"] = gbResult[x].length;
-                gbResultReduced.push(obj);
-            });
-            return gbResultReduced;
-        }
-        return [];
-    }
-
-    /**
-     * Return an objectArray grouped by a property
-     * @param obj
-     * @param {string} prop
-     * @private
-     */
-    private _objectGroupByProperty(obj: any, prop: string){
-        return obj.reduce(function(rv: any, x: any) {
-            (rv[x[prop]] = rv[x[prop]] || []).push(x);
-            return rv;
-        }, {});
     }
 
     /**
@@ -522,24 +486,6 @@ export class RemoteCLI extends Client {
     }
 
     /**
-     * Add a custom command to the CLI
-     * @param {string} commandWord
-     * @param {string} commandDescription
-     * @param {(args: any, endCommand: Function) => void} callback
-     */
-    public addCommand(commandWord: string, commandDescription: string, callback: (args: any, endCommand: Function) => void, options?: [{key: string, description: string}]){
-        let command = vorpal
-            .command(commandWord, commandDescription)
-            .action((vorpalArgs: any, vorpalCallback: Function) => {
-                callback(vorpalArgs, vorpalCallback);
-            });
-
-        if (options != null){
-            options.forEach(x => (x.key != null && x.description != null) ? command.option(x.key, x.description) : null); // Apply options
-        }
-    }
-
-    /**
      * Get the cli logger using set configuration
      * @returns {Logger}
      */
@@ -548,28 +494,54 @@ export class RemoteCLI extends Client {
     }
 
     /**
-     * Add handler on task result event
-     * @param {(result: any, identifier: ClientIdentifier, workerToken: string) => void} callback
+     * Public methods for Task control
      */
-    public onTaskResult(callback: (result: any, identifier: ClientIdentifier, workerToken: string) => void){
-        this.cliEvent.on("taskEvent:taskResult", callback);
-    }
+    public task = {
+        /**
+         * Add handler on task result event
+         * @param {(result: any, identifier: ClientIdentifier, workerToken: string) => void} callback
+         */
+        onTaskResult: (callback: (result: any, identifier: ClientIdentifier, workerToken: string) => void) => {
+            this.cliEvent.on("onEvent:taskResult", callback);
+        },
+        /**
+         * Add handler on task custom event
+         * @param {string} eventName
+         * @param {(data: any, identifier: ClientIdentifier, workerToken: string) => void} callback
+         */
+        onTaskEvent: (eventName: string, callback: (data: any, identifier: ClientIdentifier, workerToken: string) => void) => {
+            this.cliEvent.on("onEvent:" + eventName, callback);
+        },
+        /**
+         * Add handler on all task events
+         * @param {string} eventName
+         * @param {(eventName: string, data: any, identifier: ClientIdentifier, workerToken: string) => void} callback
+         */
+        onTaskAnyEvent: (callback: (eventName: string, data: any, identifier: ClientIdentifier, workerToken: string) => void) => {
+            this.cliEvent.on("taskEvent", callback);
+        }
+    };
 
     /**
-     * Add handler on task custom event
-     * @param {string} eventName
-     * @param {(data: any, identifier: ClientIdentifier, workerToken: string) => void} callback
+     * Public methods for customization
      */
-    public onTaskEvent(eventName: string, callback: (data: any, identifier: ClientIdentifier, workerToken: string) => void){
-        this.cliEvent.on("taskEvent:" + eventName, callback);
-    }
+    public customize = {
+        /**
+         * Add a custom command to the CLI
+         * @param {string} commandWord
+         * @param {string} commandDescription
+         * @param {(args: any, endCommand: Function) => void} callback
+         */
+        addCommand: (commandWord: string, commandDescription: string, callback: (args: any, endCommand: Function) => void, options?: [{key: string, description: string}]) => {
+            let command = vorpal
+                .command(commandWord, commandDescription)
+                .action((vorpalArgs: any, vorpalCallback: Function) => {
+                    callback(vorpalArgs, vorpalCallback);
+                });
 
-    /**
-     * Add handler on all task events
-     * @param {string} eventName
-     * @param {(eventName: string, data: any, identifier: ClientIdentifier, workerToken: string) => void} callback
-     */
-    public onTaskAnyEvent(callback: (eventName: string, data: any, identifier: ClientIdentifier, workerToken: string) => void){
-        this.cliEvent.on("taskEvent", callback);
+            if (options != null){
+                options.forEach(x => (x.key != null && x.description != null) ? command.option(x.key, x.description) : null); // Apply options
+            }
+        }
     }
 }

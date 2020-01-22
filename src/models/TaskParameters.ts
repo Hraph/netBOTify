@@ -1,4 +1,4 @@
-export class GlobalParameter<T> {
+export class TaskParameterItem<T> {
     public key: string;
     public value?: T;
     public defaultValue?: T;
@@ -14,6 +14,6 @@ export class GlobalParameter<T> {
     }
 }
 
-export interface GlobalParameterList {
-    [key: string]: GlobalParameter<any>
+export interface TaskParameterList {
+    [key: string]: TaskParameterItem<any>
 }

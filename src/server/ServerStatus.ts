@@ -1,5 +1,5 @@
 import {Server} from './Server';
-import {logger} from "../logger";
+import {logger} from "../utils/logger";
 import {ClientIdentifier, ClientType, TaskStatus} from "../models/ClientIdentifier";
 
 export interface ServerStatusData {

@@ -1,12 +1,13 @@
 import {ClientIdentifier, ClientType, TaskStatus} from "../models/ClientIdentifier";
-import {logger} from "../logger";
-import {GlobalParameter, GlobalParameterList} from "../models/GlobalParameter";
+import {logger} from "../utils/logger";
+import {TaskParameterItem, TaskParameterList} from "../models/TaskParameters";
 import {ServerConfig} from "../models/ServerConfig";
 import {ServerStatus} from './ServerStatus';
 import { Server as EurecaServer } from 'eureca.io';
-import {GetIdentityCallback, ReleaseIdentityCallback, WorkerIdentity} from "../models/WorkerIdentity";
+import {GetIdentityCallback, ReleaseIdentityCallback, TaskIdentity} from "../models/TaskIdentity";
 import {Logger} from "log4js";
-import {promiseAllTimeout, promiseTimeout} from "../utils";
+import {promiseAllTimeout, promiseTimeout, reduceObjectToAllowedKeys} from "../utils/utils";
+import {Instance} from "../Instance";
 
 const express = require('express')
     , app = express()
@@ -24,7 +25,7 @@ export class Server {
     public clients: ClientIdentifier[] = [];
     private config: ServerConfig = {};
     private server: any;
-    private globalParameters: GlobalParameterList = {}; //Save the parameters for the next task launch
+    private taskParameters: TaskParameterList = {}; //Save the parameters for the next task launch
     private serverEvent: any;
     private subscribedCLISToEvents: string[] = []; //Save the list of subscribed CLI
     private saveLogToDirectory: boolean = false;
@@ -86,7 +87,7 @@ export class Server {
                     next();
                 },
                 prefix: "nbfy",
-                allow: ["launchTask", "stopTask", "statusTask", "workerOnEvent", "CLIOnEvent"]
+                allow: ["task.launch", "task.stop", "task.status.get", "onEvent"]
             });
             this.server.attach(webServer); // Attach express to eureca.io
     
@@ -107,7 +108,7 @@ export class Server {
                     __this._saveWorkerLog(client, "workerStatus", "DISCONNECTED"); //Save to log
 
                     // Release identity
-                    __this._releaseWorkerIdentity(client);
+                    __this._releaseTaskIdentity(client);
                 });
 
                 // For all clients
@@ -124,7 +125,7 @@ export class Server {
             /**
              * Print status with interval
              */
-            if (typeof this.config.intervalPrintStatus != "undefined" && this.config.intervalPrintStatus != 0){
+            if (typeof this.config.intervalPrintStatus != "undefined" && this.config.intervalPrintStatus > 0){
                 setInterval(() => ServerStatus.printServerStatus(this), this.config.intervalPrintStatus * 1000);
             }
         }
@@ -132,22 +133,6 @@ export class Server {
             logger.server().error("Error while constructing server: " + e);
             process.exit(1);
         }
-    }
-
-    /**
-     * Reduce an object properties to a certain list of allowed keys
-     * @param object
-     * @param {Array<String>} keys
-     * @returns {Object}
-     * @private
-     */
-    private _reduceObjectToAllowedKeys(object: any, keys: any): Object {
-        return Object.keys(object)
-            .filter(key => keys.includes(key))
-            .reduce((obj: any, key: any) => {
-                obj[key] = object[key];
-                return obj;
-            }, {});
     }
 
     /**
@@ -160,21 +145,160 @@ export class Server {
          * Automatic ping for all clients
          * @returns {number}
          */
-        this.server.exports.ping = function() {
+        this.server.exports.ping = function(replyText: boolean = false) {
             __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
                 client.latestReceivedPingTimestamp = Date.now();
             });
-            return 1;
+            return replyText ? "pong" : 1;
         };
 
         /**
-         * Methods definition for Worker clients
+         * Actions for Task
          */
         this.server.exports.task = {
             /**
+             * Launch a task on all workers or specified workers' client id
+             * @param {TaskParameterList} parameters
+             * @param token: Specific token filter
+             * @param {object} args: Specific arguments
+             */
+            launch: function (parameters: TaskParameterList = {}, token: any = null, args: {force: boolean, limit: number, where: string}) {
+                let clientPromises: any[] = [];
+                let context = this;
+                context.async = true; //Define an asynchronous return
+
+                __this._saveTaskParameters(parameters); //Save parameters
+
+                let total = 0;
+                let totalPromised = 0;
+                let errors = 0;
+                let success = 0;
+                let limit = (typeof args.limit != "undefined") ? args.limit : 0; // Set limit for unlimited
+                let whereKey: string;
+                let whereFilter: string;
+
+                // Process where
+                if (args.where != null && args.where.includes("=")) {
+                    let where: any = args.where.split("=");
+                    whereKey = where[0].trim();
+                    whereFilter = where[1].replace(/'/gi, "").trim(); // filter is surrounded with quotes involuntary by vorpal
+                }
+
+                __this.clients.filter(client => {
+                    // Custom filter if token parameter is set and Worker
+                    return (token !== null) ? (client.clientType == ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientType.Worker);
+                }).filter(client => {
+                    // Process where
+                    return (whereKey != null && whereFilter != null) ? client[whereKey] == whereFilter : true;
+                }).forEach(client => { // Get Workers clients ONLY
+                    if ((totalPromised < limit || limit == 0) && ((typeof args.force != "undefined" && args.force) || client.taskStatus == TaskStatus.Idle)) { // Launch task only if task is currently stopped and limit is set and not reached
+
+                        // Check if getIdentity callback promise has been set
+                        if (__this.identityCallback != null) {
+
+                            // Get identity
+                            clientPromises.push(promiseTimeout(10000, __this.identityCallback().then((identity: TaskIdentity) => { // timeout 10 sec
+
+                                // Get clientIdentifier
+                                let clientIdentifier: any = __this.clients.find(x => x.clientId == client.clientId);
+                                if (typeof clientIdentifier !== "undefined")
+                                    clientIdentifier.identity = identity; // Save identity for releasing
+
+                                return __this.server.getClient(client.clientId).task.launch(identity, __this.taskParameters); // Launch task with identity
+                            })).then(() => ++success)
+                                .catch((err: any) => {
+                                    //logger.server().error("Error while getting identity", err);
+                                    ++errors; // Increments errors
+                                }));
+                        }
+
+                        // No identity
+                        else {
+                            clientPromises.push(promiseTimeout(10000, __this.server.getClient(client.clientId).task.launch(null, __this.taskParameters)).then(() => ++success).catch((err: any) => {
+                                //logger.server().error("Error while getting identity", err);
+                                ++errors; // Increments errors
+                            })); // Launch task without identity timeout 10 sec
+                        }
+
+                        ++totalPromised;
+                    }
+
+                    ++total;
+                });
+
+                Promise.all(clientPromises).catch((e: any) => { // Wait all launches to finish
+                    logger.server().error("Unable to launch task", e);
+                    ++errors; // Increments errors
+                    return []; // Return a value allowing the .then to be called
+                }).then((results: any) => { // Send success anyway even if failed
+                    context.return({
+                        success: success,
+                        total: total,
+                        errors: errors
+                    });
+                });
+            },
+            /**
+             * Stop a task on all workers or specified workers' client id
+             * @param token: Specific token filter
+             * @param {object} args: Specific arguments
+             */
+            stop: function (token: any = null, args: {force: boolean, limit: number, where: string}) {
+                let clientPromises: any[] = [];
+                let context = this;
+                context.async = true; // Define an asynchronous return
+
+                let total = 0;
+                let totalPromised = 0;
+                let errors = 0;
+                let limit = (typeof args.limit != "undefined") ? args.limit : 0; // Set limit for unlimited
+                let whereKey: string;
+                let whereFilter: string;
+
+                // Process where
+                if (args.where != null && args.where.includes("=")) {
+                    let where: any = args.where.split("=");
+                    whereKey = where[0].trim();
+                    whereFilter = where[1].replace(/'/gi, "").trim(); // filter is surrounded with quotes involuntary by vorpal
+                }
+
+                __this.clients.filter(client => {
+                    // Custom filter if token parameter is set
+                    return (token !== null) ? (client.clientType == ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientType.Worker);
+                }).filter(client => {
+                    // Process where
+                    return (whereKey != null && whereFilter != null) ? client[whereKey] == whereFilter : true;
+                }).forEach(client => { // Get Workers clients ONLY
+                    if ((totalPromised < limit || limit == 0) && ((typeof args.force != "undefined" && args.force) || client.taskStatus != TaskStatus.Idle)){ // Stop task only if task is not currently stopped and limit is set and not reached
+                        clientPromises.push(
+                            promiseTimeout(10000, __this.server.getClient(client.clientId).task.stop()) // timeout 10 sec
+                                .catch((e: any) => { // Catch directly error
+                                    //logger.server().error("Unable to stop task ", e);
+                                    ++errors; // Increments errors
+                                })
+                        ); //Stop task
+                        ++totalPromised;
+                    }
+
+                    ++total;
+                });
+
+                Promise.all(clientPromises).catch((e: any) => { //Wait all stops to finish
+                    logger.server().error("Unable to stop task ", e);
+                    ++errors; // Increments errors
+                    return []; // Return a value allowing the .then to be called
+                }).then((results: any) => { // Send success anyway even if failed
+                    context.return({
+                        success: results.length,
+                        total: total,
+                        errors: errors
+                    });
+                });
+            },
+            /**
              * Action when a task has successfully been launch on the worker
              */
-            taskLaunched: function () {
+            onLaunched: function () {
                 let workerProxy = this.clientProxy;
 
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
@@ -187,7 +311,7 @@ export class Server {
             /**
              * Action when a task has successfully been stop on the worker
              */
-            taskStopped: function () {
+            onStopped: function () {
                 let workerProxy = this.clientProxy;
 
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
@@ -202,13 +326,13 @@ export class Server {
              * Resend the result to all internal event subscribers
              * @param result
              */
-            taskResult: function(result: any) {
+            onResult: function(result: any) {
                 let workerProxy = this.clientProxy;
 
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
                     __this.serverEvent.emit("taskEvent", "taskResult", result, client, workerProxy); // Emit event
 
-                    __this.sendEventToSubscribedCLIs("taskResult", result, client.token); //Send task event to subscribed CLIS
+                    __this.events.sendEventToSubscribedCLIs("taskResult", result, client.token); //Send task event to subscribed CLIS
                     __this._saveWorkerResult(client, result); //Save to log
                 });
 
@@ -218,7 +342,7 @@ export class Server {
              * Resend the error to all internal event subscribers
              * @param error
              */
-            taskError: function(error: any) {
+            onError: function(error: any) {
                 let workerProxy = this.clientProxy;
 
 
@@ -226,7 +350,7 @@ export class Server {
                     __this.serverEvent.emit("taskEvent", "taskError", error, client, workerProxy); // Emit event
 
                     client.taskStatus = TaskStatus.Error;
-                    __this.sendEventToSubscribedCLIs("taskError", error, client.token); //Send task event to subscribed CLIS
+                    __this.events.sendEventToSubscribedCLIs("taskError", error, client.token); //Send task event to subscribed CLIS
                     __this._saveWorkerLog(client, "taskError", error); //Save to log
                 });
 
@@ -237,14 +361,14 @@ export class Server {
              * @param {string} eventName
              * @param data
              */
-            taskEvent: function(eventName: string, data: any = null){
+            onEvent: function(eventName: string, data: any = null){
                 let workerProxy = this.clientProxy;
 
                 //Save to log
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
                     __this.serverEvent.emit("taskEvent", eventName, data, client, workerProxy); // Emit event
 
-                    __this.sendEventToSubscribedCLIs(eventName, data, client.token); //Send task event to subscribed CLIS
+                    __this.events.sendEventToSubscribedCLIs(eventName, data, client.token); //Send task event to subscribed CLIS
                     __this._saveWorkerLog(client, eventName, data);
                 });
             },
@@ -252,15 +376,16 @@ export class Server {
              * Action when the task is ended
              * @param data
              */
-            taskEnded: function(data: any) {
+            onEnded: function(data: any) {
                 let workerProxy = this.clientProxy;
 
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
                     __this.serverEvent.emit("taskEvent", "taskResult", data, client, workerProxy); // Emit event
 
                     client.taskStatus = TaskStatus.Ended;
-                    __this._saveWorkerLog(client, "taskStatus", "ENDED: " + (typeof data == "object") ? JSON.stringify(data) : data); //Save to log
-                    __this._releaseWorkerIdentity(client);
+                    let formattedData = (typeof data == "object") ? JSON.stringify(data) : data;
+                    __this._saveWorkerLog(client, "taskStatus", `ENDED: ${formattedData}`); //Save to log
+                    __this._releaseTaskIdentity(client);
                 });
             },
             /**
@@ -278,19 +403,91 @@ export class Server {
         };
 
         /**
-         * Methods definition for CLI clients
+         * Actions for Task Parameters
+         */
+        this.server.exports.task.parameters = {
+            /**
+             * Get the list of registered global parameters for all workers
+             * @returns {TaskParameterList}
+             */
+            get: function() {
+                return __this.taskParameters;
+            },
+            /**
+             * Save the edited parameters values from CLI in local
+             * @param {TaskParameterList} parameters
+             */
+            save: function(parameters: TaskParameterList = {}) {
+                __this._saveTaskParameters(parameters); //Save parameters
+            }
+        };
+
+        /**
+         * Actions for Task Status
+         */
+        this.server.exports.task.status = {
+            /**
+             * Get status from all workers
+             * @param token
+             * @param {{where: string}} args
+             */
+            get: function (token: any = null, args: {where: string}){
+                let clientPromises: any[] = [];
+                let context = this;
+                context.async = true; //Define an asynchronous return
+
+                let total = 0;
+                let errors = 0;
+                let success = 0;
+                let statuses: any[] = [];
+                let whereKey: string;
+                let whereFilter: string;
+
+                // Process where
+                if (args.where != null && args.where.includes("=")) {
+                    let where: any = args.where.split("=");
+                    whereKey = where[0].trim();
+                    whereFilter = where[1].replace(/'/gi, "").trim(); // filter is surrounded with quotes involuntary by vorpal
+                }
+
+                __this.clients.filter(client => {
+                    // Custom filter if token parameter is set and Worker
+                    return (token !== null) ? (client.clientType == ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientType.Worker);
+                }).filter(client => {
+                    // Process where
+                    return (whereKey != null && whereFilter != null) ? client[whereKey] == whereFilter : true;
+                }).forEach(client => {
+                    clientPromises.push(promiseTimeout(20000, __this.server.getClient(client.clientId).task.status.get()).then((status: any) => { // timeout 20 sec
+                        if (status != null)
+                            statuses.push(status);
+                        ++success;
+                    }).catch((err: any) => {
+                        //logger.server().error("Error while getting worker status", err);
+                        ++errors; // Increments errors
+                    }));
+
+                    ++total;
+                });
+
+                Promise.all(clientPromises).catch((e: any) => { // Wait all launches to finish
+                    logger.server().error("Error while getting worker status", e);
+                    ++errors; // Increments errors
+                    return []; // Return a value allowing the .then to be called
+                }).then((results: any) => { // Send success anyway even if failed
+                    context.return({
+                        statuses: statuses,
+                        success: success,
+                        total: total,
+                        errors: errors
+                    });
+                });
+            }
+        };
+
+        /**
+         * Action for CLI clients
          */
         this.server.exports.cli = {
-            /**
-             * Reply to a ping command from CLI
-             * @returns {string}
-             */
-            ping: function() {
-                __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
-                   client.latestReceivedPingTimestamp = Date.now();
-                });
-                return "pong";
-            },
             /**
              * Subscribe the CLI to next worker events
              */
@@ -320,7 +517,7 @@ export class Server {
                 return __this.clients.filter(client => {
                     //Custom filter if token parameter is set
                     return (token !== null) ? (client.clientType == ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientType.Worker)
-                }).map(client => __this._reduceObjectToAllowedKeys(client, __this.filteredClientIdentifierWorkerKeys)); // Return restricted object
+                }).map(client => reduceObjectToAllowedKeys(client, __this.filteredClientIdentifierWorkerKeys)); // Return restricted object
             },
             /**
              * Return the list of connected clis
@@ -331,21 +528,7 @@ export class Server {
                 return __this.clients.filter(client => {
                     //Custom filter if token parameter is set
                     return (token !== null) ? (client.clientType == ClientType.RemoteCLI && client.token.startsWith(token)) : (client.clientType == ClientType.RemoteCLI);
-                }).map(client => __this._reduceObjectToAllowedKeys(client, __this.filteredClientIdentifierCLIKeys)); // Return restricted object
-            },
-            /**
-             * Get the list of registered global parameters for all workers
-             * @returns {GlobalParameterList}
-             */
-            getGlobalParameters: function() {
-                return __this.globalParameters;
-            },
-            /**
-             * Save the edited parameters values from CLI in local
-             * @param {GlobalParameterList} parameters
-             */
-            saveGlobalParameters: function(parameters: GlobalParameterList = {}) {
-                __this._saveTaskParameters(parameters); //Save parameters
+                }).map(client => reduceObjectToAllowedKeys(client, __this.filteredClientIdentifierCLIKeys)); // Return restricted object
             },
             /**
              * Send a custom event to all connected workers or a specific one
@@ -354,202 +537,7 @@ export class Server {
              * @param token specific token
              */
             sendEventToWorkers: function(eventName: string, data: any, token: any = null){
-                return __this.sendEventToWorkers(eventName, data, token);
-            },
-            /**
-             * Get status from all workers
-             * @param token
-             * @param {{where: string}} args
-             */
-            statusTask: function (token: any = null, args: {where: string}){
-                let clientPromises: any[] = [];
-                let context = this;
-                context.async = true; //Define an asynchronous return
-
-                let total = 0;
-                let errors = 0;
-                let success = 0;
-                let statuses: any[] = [];
-                let whereKey: string;
-                let whereFilter: string;
-
-                // Process where
-                if (args.where != null && args.where.includes("=")) {
-                    let where: any = args.where.split("=");
-                    whereKey = where[0].trim();
-                    whereFilter = where[1].replace(/'/gi, "").trim(); // filter is surrounded with quotes involuntary by vorpal
-                }
-
-                __this.clients.filter(client => {
-                    // Custom filter if token parameter is set and Worker
-                    return (token !== null) ? (client.clientType == ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientType.Worker);
-                }).filter(client => {
-                    // Process where
-                    return (whereKey != null && whereFilter != null) ? client[whereKey] == whereFilter : true;
-                }).forEach(client => {
-                    clientPromises.push(promiseTimeout(20000, __this.server.getClient(client.clientId).statusTask()).then((status: any) => { // timeout 20 sec
-                        if (status != null)
-                            statuses.push(status);
-                        ++success;
-                    }).catch((err: any) => {
-                        //logger.server().error("Error while getting worker status", err);
-                        ++errors; // Increments errors
-                    }));
-
-                    ++total;
-                });
-
-                Promise.all(clientPromises).catch((e: any) => { // Wait all launches to finish
-                    logger.server().error("Error while getting worker status", e);
-                    ++errors; // Increments errors
-                    return []; // Return a value allowing the .then to be called
-                }).then((results: any) => { // Send success anyway even if failed
-                    context.return({
-                        statuses: statuses,
-                        success: success,
-                        total: total,
-                        errors: errors
-                    });
-                });
-            },
-            /**
-             * Launch a task on all workers or specified workers' client id
-             * @param {GlobalParameterList} parameters
-             * @param token: Specific token filter
-             * @param {object} args: Specific arguments
-             */
-            launchTask: function (parameters: GlobalParameterList = {}, token: any = null, args: {force: boolean, limit: number, where: string}) {
-                let clientPromises: any[] = [];
-                let context = this;
-                context.async = true; //Define an asynchronous return
-
-                __this._saveTaskParameters(parameters); //Save parameters
-
-                let total = 0;
-                let totalPromised = 0;
-                let errors = 0;
-                let success = 0;
-                let limit = (typeof args.limit != "undefined") ? args.limit : 0; // Set limit for unlimited
-                let whereKey: string;
-                let whereFilter: string;
-
-                // Process where
-                if (args.where != null && args.where.includes("=")) {
-                    let where: any = args.where.split("=");
-                    whereKey = where[0].trim();
-                    whereFilter = where[1].replace(/'/gi, "").trim(); // filter is surrounded with quotes involuntary by vorpal
-                }
-
-                __this.clients.filter(client => {
-                        // Custom filter if token parameter is set and Worker
-                    return (token !== null) ? (client.clientType == ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientType.Worker);
-                }).filter(client => {
-                    // Process where
-                    return (whereKey != null && whereFilter != null) ? client[whereKey] == whereFilter : true;
-                }).forEach(client => { // Get Workers clients ONLY
-                    if ((totalPromised < limit || limit == 0) && ((typeof args.force != "undefined" && args.force) || client.taskStatus == TaskStatus.Idle)) { // Launch task only if task is currently stopped and limit is set and not reached
-
-                        // Check if getIdentity callback promise has been set
-                        if (__this.identityCallback != null) {
-
-                            // Get identity
-                            clientPromises.push(promiseTimeout(10000, __this.identityCallback().then((identity: WorkerIdentity) => { // timeout 10 sec
-
-                                // Get clientIdentifier
-                                let clientIdentifier: any = __this.clients.find(x => x.clientId == client.clientId);
-                                if (typeof clientIdentifier !== "undefined")
-                                    clientIdentifier.identity = identity; // Save identity for releasing
-
-                                return __this.server.getClient(client.clientId).launchTask(identity, __this.globalParameters); // Launch task with identity
-                            })).then(() => ++success)
-                                .catch((err: any) => {
-                                //logger.server().error("Error while getting identity", err);
-                                ++errors; // Increments errors
-                            }));
-                        }
-
-                        // No identity
-                        else {
-                            clientPromises.push(promiseTimeout(10000, __this.server.getClient(client.clientId).launchTask(null, __this.globalParameters)).then(() => ++success).catch((err: any) => {
-                                //logger.server().error("Error while getting identity", err);
-                                ++errors; // Increments errors
-                            })); // Launch task without identity timeout 10 sec
-                        }
-
-                        ++totalPromised;
-                    }
-
-                    ++total;
-                });
-
-                Promise.all(clientPromises).catch((e: any) => { // Wait all launches to finish
-                    logger.server().error("Unable to launch task", e);
-                    ++errors; // Increments errors
-                    return []; // Return a value allowing the .then to be called
-                }).then((results: any) => { // Send success anyway even if failed
-                    context.return({
-                        success: success,
-                        total: total,
-                        errors: errors
-                    });
-                });
-            },
-            /**
-             * Stop a task on all workers or specified workers' client id
-             * @param token: Specific token filter
-             * @param {object} args: Specific arguments
-             */
-            stopTask: function (token: any = null, args: {force: boolean, limit: number, where: string}) {
-                let clientPromises: any[] = [];
-                let context = this;
-                context.async = true; // Define an asynchronous return
-
-                let total = 0;
-                let totalPromised = 0;
-                let errors = 0;
-                let limit = (typeof args.limit != "undefined") ? args.limit : 0; // Set limit for unlimited
-                let whereKey: string;
-                let whereFilter: string;
-
-                // Process where
-                if (args.where != null && args.where.includes("=")) {
-                    let where: any = args.where.split("=");
-                    whereKey = where[0].trim();
-                    whereFilter = where[1].replace(/'/gi, "").trim(); // filter is surrounded with quotes involuntary by vorpal
-                }
-
-                __this.clients.filter(client => {
-                        // Custom filter if token parameter is set
-                        return (token !== null) ? (client.clientType == ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientType.Worker);
-                    }).filter(client => {
-                        // Process where
-                        return (whereKey != null && whereFilter != null) ? client[whereKey] == whereFilter : true;
-                    }).forEach(client => { // Get Workers clients ONLY
-                        if ((totalPromised < limit || limit == 0) && ((typeof args.force != "undefined" && args.force) || client.taskStatus != TaskStatus.Idle)){ // Stop task only if task is not currently stopped and limit is set and not reached
-                            clientPromises.push(
-                                promiseTimeout(10000, __this.server.getClient(client.clientId).stopTask()) // timeout 10 sec
-                                    .catch((e: any) => { // Catch directly error
-                                        //logger.server().error("Unable to stop task ", e);
-                                        ++errors; // Increments errors
-                                    })
-                            ); //Stop task
-                            ++totalPromised;
-                        }
-
-                    ++total;
-                });
-
-                Promise.all(clientPromises).catch((e: any) => { //Wait all stops to finish
-                    logger.server().error("Unable to stop task ", e);
-                    ++errors; // Increments errors
-                    return []; // Return a value allowing the .then to be called
-                }).then((results: any) => { // Send success anyway even if failed
-                    context.return({
-                        success: results.length,
-                        total: total,
-                        errors: errors
-                    });
-                });
+                return __this.events.sendEventToWorkers(eventName, data, token);
             }
         }
     }
@@ -559,7 +547,7 @@ export class Server {
      * @param {ClientIdentifier} client
      * @private
      */
-    private _releaseWorkerIdentity(client: ClientIdentifier) {
+    private _releaseTaskIdentity(client: ClientIdentifier) {
         if (typeof this.identityCallback === "function" && typeof this.releaseIdentityCallback === "function" && typeof client.identity !== "undefined") {
             this.releaseIdentityCallback(client.identity).then(() => {
                 client.identity = undefined; //Reset identity
@@ -569,17 +557,17 @@ export class Server {
 
     /**
      * Save the parameters for the next launch
-     * @param {GlobalParameterList} parameters
+     * @param {TaskParameterList} parameters
      * @private
      */
-    private _saveTaskParameters(parameters: GlobalParameterList = {}){
+    private _saveTaskParameters(parameters: TaskParameterList = {}){
         //Treat input parameters
         if (Object.keys(parameters).length !== 0) {
             for (let parameterKey in parameters) {
                 let parameter = parameters[parameterKey];
                 
-                if (this.globalParameters.hasOwnProperty(parameter.key)) {
-                    this.globalParameters[parameter.key] = parameter; //Update the local parameter
+                if (this.taskParameters.hasOwnProperty(parameter.key)) {
+                    this.taskParameters[parameter.key] = parameter; //Update the local parameter
                 }
             };
         }
@@ -611,7 +599,7 @@ export class Server {
 
             function processErr(err: any){
                 logger.server().error('Unable to save log: ', err);
-                __this.sendEventToSubscribedCLIs("saveLogError", "Save log error " + err, client.token);
+                __this.events.sendEventToSubscribedCLIs("saveLogError", "Save log error " + err, client.token);
             }
             
             //Create directory if not exists and write to file
@@ -636,7 +624,7 @@ export class Server {
 
             function processErr(err: any){
                 logger.server().error('Unable to save result: ', err);
-                __this.sendEventToSubscribedCLIs("saveResultError", "Save log result " + err, client.token);
+                __this.events.sendEventToSubscribedCLIs("saveResultError", "Save log result " + err, client.token);
             }
             
             //Create directory if not exists and write to file
@@ -662,7 +650,7 @@ export class Server {
             
             function processErr(err: any){
                 logger.server().error('Unable to save image: ', err);
-                __this.sendEventToSubscribedCLIs("saveImageError", "Save image error " + err, client.token);
+                __this.events.sendEventToSubscribedCLIs("saveImageError", "Save image error " + err, client.token);
             }
             
             try {
@@ -692,127 +680,133 @@ export class Server {
     }
 
     /**
-     * Add handler on task result event
-     * @param {(result: any, client: any) => void} callback
-     */
-    public onTaskResult(callback: (result: any, identifier: ClientIdentifier, workerProxy: any) => void){
-        this.serverEvent.on("taskEvent:taskResult", callback);
-    }
-
-    /**
-     * Add handler on task custom event
-     * @param {string} eventName
-     * @param {(data: any, client: any) => void} callback
-     */
-    public onTaskEvent(eventName: string, callback: (data: any, identifier: ClientIdentifier, workerProxy: any) => void){
-        this.serverEvent.on("taskEvent:" + eventName, callback);
-    }
-
-    /**
-     * Add handler on task any event
-     * @param {(eventName: string, data: any, identifier: ClientIdentifier, workerProxy: any) => void} callback
-     */
-    public onTaskAnyEvent(callback: (eventName: string, data: any, identifier: ClientIdentifier, workerProxy: any) => void){
-        this.serverEvent.on("taskEvent", callback);
-    }
-
-    /**
-     * Add handler on task end event
-     * @param {(data: any, client: any) => void} callback
-     */
-    public onTaskEnded(callback: (data: any, identifier: ClientIdentifier, workerProxy: any) => void){
-        this.serverEvent.on("taskEvent:taskEnded", callback);
-    }
-
-    /**
-     * Add a custom task parameter for all workers
-     * @param {string} key: The parameter key
-     * @param defaultValue: Default initial value if value is not set
-     * @param value: Initial value
-     */
-    public addGlobalParameter(key: string, defaultValue: any, value: any = null){
-        this.globalParameters[key] = (new GlobalParameter(key, defaultValue, value));
-    }
-
-    /**
-     * Get a particular parameter by key or false if not found
-     * @param {string} key
-     * @returns {GlobalParameter<any>}
-     */
-    public getGlobalParameter(key: string){
-        if (this.globalParameters.hasOwnProperty(key)) {
-            return this.globalParameters[key];
-        }
-        return false;
-    }
-
-    /**
-     * Add custom server RPC method callable from clients
-     * @param {string} name
-     * @param {Function} callback
-     */
-    public addServerAction(name: string, callback: Function){
-        this.server.exports[name] = callback;
-    }
-
-    /**
-     * Declare a client RPC method callable from the server
-     * @param {string} name
-     */
-    public declareWorkerTask(name: string){
-        this.server.settings.allow.push(name);
-    }
-
-    /**
-     * Set a callback called when a worker is getting an identity
-     * @param {GetIdentityCallback} callback
-     */
-    public onWorkerGetIdentity(callback: GetIdentityCallback){
-        this.identityCallback = callback;
-    }
-
-    /**
-     * Set a callback called when a worker is releasing an identity
-     * @param {ReleaseIdentityCallback} callback
-     */
-    public onWorkerReleaseIdentity(callback: ReleaseIdentityCallback){
-        this.releaseIdentityCallback = callback;
-    }
-
-    /**
-     * Forward a custom event to all the subscribed CLIs
-     * @param {string} eventName: The name of the event
-     * @param data: Optional parameters
-     * @param {string} workerToken: The token of the origin worker
-     * @public
-     */
-    public sendEventToSubscribedCLIs(eventName: string, data: any = null, workerToken: string){
-        this.clients.filter(client => (client.clientType == ClientType.RemoteCLI && this.subscribedCLISToEvents.indexOf(client.token) !== -1)) //Get subscribed clients wich are CLIS
-            .forEach(client => {
-                this.server.getClient(client.clientId).CLIOnEvent(eventName, data, workerToken); //Send event
-            });
-    }
-
-    /**
-     * Send a custom event to all connected workers or a specific one
-     * @param {string} eventName
-     * @param data
-     * @param token specific token
-     */
-    public sendEventToWorkers(eventName: string, data: any, token: any = null){
-        this.clients.filter(client => {
-            // Custom filter if token parameter is set
-            return (token !== null) ? (client.clientType == ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientType.Worker)
-        }).forEach(client => {
-            this.server.getClient(client.clientId).workerOnEvent(eventName, data); // Send event
-        });
-    }
-
-    /**
      * Get the server logger using set configuration
      * @returns {Logger}
      */
     public logger(): Logger {
         return logger.server();
     }
+
+    /**
+     * Public methods for Task control
+     */
+    public task = {
+        /**
+         * Add handler on task result event
+         * @param {(result: any, client: any) => void} callback
+         */
+        onTaskResult: (callback: (result: any, identifier: ClientIdentifier, workerProxy: any) => void) => {
+            this.serverEvent.on("taskEvent:taskResult", callback);
+        },
+        /**
+         * Add handler on task custom event
+         * @param {string} eventName
+         * @param {(data: any, client: any) => void} callback
+         */
+        onTaskEvent: (eventName: string, callback: (data: any, identifier: ClientIdentifier, workerProxy: any) => void) => {
+            this.serverEvent.on("taskEvent:" + eventName, callback);
+        },
+        /**
+         * Add handler on task any event
+         * @param {(eventName: string, data: any, identifier: ClientIdentifier, workerProxy: any) => void} callback
+         */
+        onTaskAnyEvent: (callback: (eventName: string, data: any, identifier: ClientIdentifier, workerProxy: any) => void) => {
+            this.serverEvent.on("taskEvent", callback);
+        },
+        /**
+         * Add handler on task end event
+         * @param {(data: any, client: any) => void} callback
+         */
+        onTaskEnded: (callback: (data: any, identifier: ClientIdentifier, workerProxy: any) => void) => {
+            this.serverEvent.on("taskEvent:taskEnded", callback);
+        },
+        /**
+         * Add a custom task parameter for all workers
+         * @param {string} key: The parameter key
+         * @param defaultValue: Default initial value if value is not set
+         * @param value: Initial value
+         */
+        addTaskParameter: (key: string, defaultValue: any, value: any = null) => {
+            this.taskParameters[key] = (new TaskParameterItem(key, defaultValue, value));
+        },
+        /**
+         * Get a particular parameter by key or false if not found
+         * @param {string} key
+         * @returns {TaskParameterItem<any>}
+         */
+        getTaskParameter: (key: string) => {
+            if (this.taskParameters.hasOwnProperty(key)) {
+                return this.taskParameters[key];
+            }
+            return false;
+        },
+        /**
+         * Set a callback called when a worker is getting an identity
+         * @param {GetIdentityCallback} callback
+         */
+        onTaskIdentityAcquired: (callback: GetIdentityCallback) => {
+            this.identityCallback = callback;
+        },
+        /**
+         * Set a callback called when a worker is releasing an identity
+         * @param {ReleaseIdentityCallback} callback
+         */
+        onTaskIdentityReleased: (callback: ReleaseIdentityCallback) => {
+            this.releaseIdentityCallback = callback;
+        }
+    };
+
+    /**
+     *  Public methods for events
+     */
+    public events = {
+        /**
+         * Forward a custom event to all the subscribed CLIs
+         * @param {string} eventName: The name of the event
+         * @param data: Optional parameters
+         * @param {string} workerToken: The token of the origin worker
+         * @public
+         */
+        sendEventToSubscribedCLIs: (eventName: string, data: any = null, workerToken: string) => {
+            this.clients.filter(client => (client.clientType == ClientType.RemoteCLI && this.subscribedCLISToEvents.indexOf(client.token) !== -1)) //Get subscribed clients wich are CLIS
+                .forEach(client => {
+                    this.server.getClient(client.clientId).onEvent(eventName, data, workerToken); //Send event
+                });
+        },
+        /**
+         * Send a custom event to all connected workers or a specific one
+         * @param {string} eventName
+         * @param data
+         * @param token specific token
+         */
+        sendEventToWorkers: (eventName: string, data: any, token: any = null) => {
+            this.clients.filter(client => {
+                // Custom filter if token parameter is set
+                return (token !== null) ? (client.clientType == ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientType.Worker)
+            }).forEach(client => {
+                this.server.getClient(client.clientId).onEvent(eventName, data); // Send event
+            });
+        }
+    };
+
+    /**
+     * Public methods for server customization
+     */
+    public customize = {
+        /**
+         * Add custom server RPC method callable from clients
+         * @param {string} name
+         * @param {Function} callback
+         */
+        addServerAction: (name: string, callback: Function) => {
+            this.server.exports[name] = callback;
+        },
+        /**
+         * Declare a client RPC method callable from the server
+         * @param {string} name
+         */
+        registerWorkerTask: (name: string) => {
+            this.server.settings.allow.push(name);
+        }
+    };
 }

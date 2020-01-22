@@ -1,5 +1,5 @@
 import {ClientIdentifier} from "../models/ClientIdentifier";
-import {logger} from "../logger";
+import {logger} from "../utils/logger";
 import { Client as EurecaClient } from 'eureca.io';
 import {ClientConfig} from "../models/ClientConfig";
 

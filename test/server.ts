@@ -1,8 +1,8 @@
 import {Server} from '../src';
 import * as path from 'path';
-import {WorkerIdentity} from "../src/models/WorkerIdentity";
+import {TaskIdentity} from "../src/models/TaskIdentity";
 
-interface CustomIdentity extends WorkerIdentity {
+interface CustomIdentity extends TaskIdentity {
     username: string,
     pwd: string
 }
@@ -15,13 +15,13 @@ let server = new Server({
     logger: 'debug'
 });
 
-server.addGlobalParameter("id", "12345678");
+server.task.addTaskParameter("id", "12345678");
 
-server.onTaskEvent("hello", (data: any, client: any) => {
+server.task.onTaskEvent("hello", (data: any, client: any) => {
     console.log("Got event Hello: ", data);
 });
 
-server.onWorkerGetIdentity( () => {
+server.task.onTaskIdentityAcquired( () => {
     return new Promise(((resolve, reject) => {
         let identity: CustomIdentity = {
             id: "ID",
@@ -33,7 +33,7 @@ server.onWorkerGetIdentity( () => {
     }));
 });
 
-server.onWorkerReleaseIdentity((identity => {
+server.task.onTaskIdentityReleased((identity => {
     return new Promise(((resolve, reject) => {
         console.log("Releasing identity: " + identity);
         resolve();
