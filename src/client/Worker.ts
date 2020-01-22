@@ -187,6 +187,7 @@ export class Worker extends Client {
                     }
                     catch(e) {
                         logger.worker().error(e);
+                        return context.return(null);
                         //TODO SEND ERROR
                     }
                 }
@@ -233,6 +234,7 @@ export class Worker extends Client {
                     }
                     catch(e) {
                         logger.worker().error(e);
+                        return context.return(0);
                         //TODO SEND ERROR
                     }
                 }

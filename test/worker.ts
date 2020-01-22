@@ -11,7 +11,7 @@ let worker = new Worker({
     logger: 'debug',
     tunnelProvider: TunnelProvider.Ngrok,
     tunnelProviderConfig: {
-        authKey: "DEDED"
+        authtoken: process.env.AUTH_TOKEN
     }
 });
 
