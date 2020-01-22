@@ -21,14 +21,14 @@ class WorkerTunnelNgrok {
         try {
             let ngrok = require("ngrok");
             if (typeof ngrok.connect == "undefined") {
-                __1.logger.worker().fatal("Dependency ngrok is not installed!");
+                throw ("Dependency ngrok is not installed!");
             }
             else {
                 this.ngrok = ngrok;
             }
         }
         catch (e) {
-            __1.logger.worker().fatal("Dependency ngrok is not installed!");
+            throw ("Dependency ngrok is not installed!");
         }
     }
     setConfig(config) {
@@ -54,12 +54,16 @@ class WorkerTunnelNgrok {
                 Object.assign(config, this.config);
                 return this.ngrok.connect(config);
             }
+            else
+                throw ("Dependency ngrok is not installed!");
         });
     }
     disconnect(url = "") {
         return __awaiter(this, void 0, void 0, function* () {
             if (this.ngrok)
                 return this.ngrok.disconnect(url);
+            else
+                throw ("Dependency ngrok is not installed!");
         });
     }
     disconnectAll() {
@@ -69,7 +73,10 @@ class WorkerTunnelNgrok {
     }
     kill() {
         return __awaiter(this, void 0, void 0, function* () {
-            return this.ngrok.kill();
+            if (this.ngrok)
+                return this.ngrok.kill();
+            else
+                throw ("Dependency ngrok is not installed!");
         });
     }
 }

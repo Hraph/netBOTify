@@ -423,6 +423,22 @@ class Server {
                 }).then(() => {
                     context.return(results);
                 });
+            },
+            onEvent: function (eventName, data = null) {
+                let workerProxy = this.clientProxy;
+                __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
+                    __this.serverEvent.emit("tunnelEvent", eventName, data, client, workerProxy);
+                    __this.events.sendEventToSubscribedCLIs(eventName, data, client.token);
+                    __this._saveWorkerLog(client, eventName, data);
+                });
+            },
+            onError: function (error) {
+                let workerProxy = this.clientProxy;
+                __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
+                    __this.serverEvent.emit("tunnelEvent", "tunnelError", error, client, workerProxy);
+                    __this.events.sendEventToSubscribedCLIs("tunnelError", error, client.token);
+                    __this._saveWorkerLog(client, "tunnelError", error);
+                });
             }
         };
         this.server.exports.cli = {

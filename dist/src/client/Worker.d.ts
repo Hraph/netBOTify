@@ -21,7 +21,7 @@ export declare class Worker extends Client {
         sendB64Image: (fileName: string, extension: string, buffer: string) => void;
     };
     events: {
-        onServerEvent: (eventName: string, callback: (server: any, data: any) => any) => void;
+        onServerEvent: (eventName: string, callback: (server: any, ...data: any) => any) => void;
     };
     logger(): Logger;
 }

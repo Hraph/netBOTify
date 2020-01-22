@@ -60,12 +60,17 @@ class Worker extends Client_1.Client {
         try {
             if (config.logger)
                 logger_1.logger.setWorkerLevel(config.logger);
-            if (config.tunnelProvider) {
-                if (config.tunnelProvider == WorkerTunnel_1.TunnelProvider.Ngrok) {
-                    this.tunnelProvider = new WorkerTunnels_1.WorkerTunnelNgrok(config.tunnelProviderConfig);
+            try {
+                if (config.tunnelProvider) {
+                    if (config.tunnelProvider == WorkerTunnel_1.TunnelProvider.Ngrok) {
+                        this.tunnelProvider = new WorkerTunnels_1.WorkerTunnelNgrok(config.tunnelProviderConfig);
+                    }
+                    else
+                        logger_1.logger.worker().error(`Invalid Tunnel provider: ${config.tunnelProvider}`);
                 }
-                else
-                    logger_1.logger.worker().error(`Invalid Tunnel provider: ${config.tunnelProvider}`);
+            }
+            catch (e) {
+                logger_1.logger.worker().error(`Tunnel error: ${e}`);
             }
             this.client.ready((serverProxy) => {
                 logger_1.logger.worker().debug('Connected to server');
@@ -149,18 +154,23 @@ class Worker extends Client_1.Client {
                                 __this.tunnels[localPort].url = url;
                                 __this.tunnels[localPort].status = WorkerTunnel_1.TunnelStatus.Connected;
                                 logger_1.logger.worker().debug(`Tunnel created on port ${localPort}: ${url} `);
+                                __this.server.tunnel.onEvent("tunnelCreated", url);
                                 return context.return(__this.tunnels[localPort]);
                             }
                             else {
-                                logger_1.logger.worker().debug(`Alredy started`);
+                                logger_1.logger.worker().debug(`Tunnel error: Tunnel already started ${localPort}`);
+                                __this.server.tunnel.onError(`Tunnel error: Tunnel already started ${localPort}`);
                                 return context.return(__this.tunnels[localPort]);
                             }
                         }
                         catch (e) {
                             logger_1.logger.worker().error(e);
+                            __this.server.tunnel.onError(`Tunnel error: ${e}`);
                             return context.return(null);
                         }
                     }
+                    else
+                        __this.server.tunnel.onError(`Tunnel error: provider not setup!`);
                 });
             },
             stop: function (localPort, killAll = false) {
@@ -182,19 +192,24 @@ class Worker extends Client_1.Client {
                                     __this.tunnels[localPort].url = "";
                                     __this.tunnels[localPort].status = WorkerTunnel_1.TunnelStatus.Stopped;
                                     logger_1.logger.worker().debug(`Tunnel stopped on port ${localPort}`);
+                                    __this.server.tunnel.onEvent("tunnelStopped", localPort);
                                     return context.return(1);
                                 }
                                 else {
-                                    logger_1.logger.worker().debug(`No tunnel exists on port ${localPort}`);
+                                    logger_1.logger.worker().debug(`Tunnel error: No tunnel exists on port ${localPort}`);
+                                    __this.server.tunnel.onError(`Tunnel error: No tunnel exists on port ${localPort}`);
                                     return context.return(0);
                                 }
                             }
                         }
                         catch (e) {
                             logger_1.logger.worker().error(e);
+                            __this.server.tunnel.onError(`Tunnel error: ${e}`);
                             return context.return(0);
                         }
                     }
+                    else
+                        __this.server.tunnel.onError(`Tunnel error: provider not setup!`);
                 });
             },
             get: function () {

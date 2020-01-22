@@ -20,8 +20,8 @@ cli.customize.addCommand("helloWorkers", "Get screenshot", (args, endCommand) =>
         key: "-b, --bye",
         description: "Say goodbye"
     }]);
-cli.task.onTaskAnyEvent((eventName, data, identifier, workerToken) => {
-    cli.logger().debug("Got event %s", eventName);
+cli.events.onAnyEvent((eventName, data, identifier, workerToken) => {
+    cli.logger().debug("Got event %s: %s", eventName, data);
 });
 cli.task.onTaskResult((data, identifier, workerToken) => {
     cli.logger().debug("Got result:", data);

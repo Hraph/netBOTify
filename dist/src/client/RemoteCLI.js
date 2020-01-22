@@ -11,13 +11,23 @@ class RemoteCLI extends Client_1.Client {
         this.taskParameters = null;
         this.task = {
             onTaskResult: (callback) => {
-                this.cliEvent.on("onEvent:taskResult", callback);
+                this.cliEvent.on("event:taskResult", callback);
             },
-            onTaskEvent: (eventName, callback) => {
-                this.cliEvent.on("onEvent:" + eventName, callback);
+            onTaskError: (callback) => {
+                this.cliEvent.on("event:taskError", callback);
+            }
+        };
+        this.tunnel = {
+            onTunnelError: (callback) => {
+                this.cliEvent.on("event:tunnelError", callback);
+            }
+        };
+        this.events = {
+            onEvent: (eventName, callback) => {
+                this.cliEvent.on("event:" + eventName, callback);
             },
-            onTaskAnyEvent: (callback) => {
-                this.cliEvent.on("taskEvent", callback);
+            onAnyEvent: (callback) => {
+                this.cliEvent.on("event", callback);
             }
         };
         this.customize = {
@@ -67,8 +77,8 @@ class RemoteCLI extends Client_1.Client {
             });
             this.client.exports.onEvent = function (eventName, data = null, token) {
                 logger_1.logger.cli().trace("EVENT %s (%s)", eventName, token);
-                __this.cliEvent.emit("taskEvent", eventName, data, token);
-                __this.cliEvent.emit("taskEvent:" + eventName, data, token);
+                __this.cliEvent.emit("event", eventName, data, token);
+                __this.cliEvent.emit("event:" + eventName, data, token);
             };
             if (!this.config.delimiter)
                 this.config.delimiter = "netBOTify";
