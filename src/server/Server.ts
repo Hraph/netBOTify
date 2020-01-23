@@ -196,7 +196,7 @@ export class Server {
                         if (__this.identityCallback != null) {
 
                             // Get identity
-                            clientPromises.push(promiseTimeout(30000, __this.identityCallback().then((identity: TaskIdentity) => { // timeout 10 sec
+                            clientPromises.push(promiseTimeout(30000, __this.identityCallback(client.token).then((identity: TaskIdentity) => { // timeout 10 sec
 
                                 // Get clientIdentifier
                                 let clientIdentifier: any = __this.clients.find(x => x.clientId == client.clientId);
@@ -694,7 +694,7 @@ export class Server {
      */
     private _releaseTaskIdentity(client: ClientIdentifier) {
         if (typeof this.identityCallback === "function" && typeof this.releaseIdentityCallback === "function" && typeof client.identity !== "undefined") {
-            this.releaseIdentityCallback(client.identity).then(() => {
+            this.releaseIdentityCallback(client.identity, client.token).then(() => {
                 client.identity = undefined; //Reset identity
             }).catch(() => logger.server().error("Unable to release identity for client %s", client.token));
         }

@@ -168,7 +168,7 @@ class Server {
                 }).forEach(client => {
                     if ((totalPromised < limit || limit == 0) && ((typeof args.force != "undefined" && args.force) || client.taskStatus == ClientIdentifier_1.TaskStatus.Idle)) {
                         if (__this.identityCallback != null) {
-                            clientPromises.push(utils_1.promiseTimeout(30000, __this.identityCallback().then((identity) => {
+                            clientPromises.push(utils_1.promiseTimeout(30000, __this.identityCallback(client.token).then((identity) => {
                                 let clientIdentifier = __this.clients.find(x => x.clientId == client.clientId);
                                 if (typeof clientIdentifier !== "undefined")
                                     clientIdentifier.identity = identity;
@@ -482,7 +482,7 @@ class Server {
     }
     _releaseTaskIdentity(client) {
         if (typeof this.identityCallback === "function" && typeof this.releaseIdentityCallback === "function" && typeof client.identity !== "undefined") {
-            this.releaseIdentityCallback(client.identity).then(() => {
+            this.releaseIdentityCallback(client.identity, client.token).then(() => {
                 client.identity = undefined;
             }).catch(() => logger_1.logger.server().error("Unable to release identity for client %s", client.token));
         }

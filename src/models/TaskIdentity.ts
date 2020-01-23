@@ -3,9 +3,9 @@ export interface TaskIdentity {
 }
 
 export interface GetIdentityCallback {
-    (): Promise<any>;
+    (token: string): Promise<any>;
 }
 
 export interface ReleaseIdentityCallback {
-    (identity: any): Promise<void>;
+    (identity: any, token: string): Promise<void>;
 }
