@@ -179,7 +179,9 @@ class Server {
                             }));
                         }
                         else {
-                            clientPromises.push(utils_1.promiseTimeout(30000, __this.server.getClient(client.clientId).task.launch(null, __this.taskParameters)).then(() => ++success).catch((err) => {
+                            clientPromises.push(utils_1.promiseTimeout(30000, __this.server.getClient(client.clientId).task.launch({}, __this.taskParameters))
+                                .then(() => ++success)
+                                .catch((err) => {
                                 ++errors;
                             }));
                         }

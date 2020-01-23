@@ -3,7 +3,6 @@ import {TaskStatus} from "../models/ClientIdentifier";
 import {logger} from "../utils/logger";
 import {TaskParameterList} from "../models/TaskParameters";
 import {WorkerConfig} from "../models/WorkerConfig";
-import {TaskIdentity} from "../models/TaskIdentity";
 import {Logger} from "log4js";
 import {Tunnel, TunnelProvider, TunnelStatus, WorkerTunnel} from "../models/WorkerTunnel";
 import {WorkerTunnelNgrok} from "./WorkerTunnels";
@@ -106,7 +105,7 @@ export class Worker extends Client {
              * Action on task launch from the server
              * @param {TaskParameterList} parameters
              */
-            launch: function(identity: TaskIdentity, parameters: TaskParameterList) {
+            launch: function(identity: any, parameters: TaskParameterList) {
                 //this.serverProxy is injected by eureca
 
                 __this.taskEvent.emit("launchTask", identity, parameters, __this.server);
@@ -285,7 +284,7 @@ export class Worker extends Client {
          * Add handler on task launch request event
          * @param {(parameters: TaskParameterList, server: any) => void} callback
          */
-        onLaunchTask: (callback: (identity: TaskIdentity, parameters: TaskParameterList, server: any) => void) => {
+        onLaunchTask: (callback: (identity: any, parameters: TaskParameterList, server: any) => void) => {
             this.taskEvent.on("launchTask", callback);
         },
         /**

@@ -1,7 +1,6 @@
 import { Client } from "./Client";
 import { TaskParameterList } from "../models/TaskParameters";
 import { WorkerConfig } from "../models/WorkerConfig";
-import { TaskIdentity } from "../models/TaskIdentity";
 import { Logger } from "log4js";
 export declare class Worker extends Client {
     private taskEvent;
@@ -11,7 +10,7 @@ export declare class Worker extends Client {
     constructor(config?: WorkerConfig);
     private _internalActions;
     task: {
-        onLaunchTask: (callback: (identity: TaskIdentity, parameters: TaskParameterList, server: any) => void) => void;
+        onLaunchTask: (callback: (identity: any, parameters: TaskParameterList, server: any) => void) => void;
         onStopTask: (callback: (server: any) => void) => void;
         onStatusTask: (callback: (server: any) => Promise<any>) => void;
         sendTaskResult: (result?: any) => void;

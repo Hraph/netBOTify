@@ -4,7 +4,7 @@ import {TaskParameterItem, TaskParameterList} from "../models/TaskParameters";
 import {ServerConfig} from "../models/ServerConfig";
 import {ServerStatus} from './ServerStatus';
 import {Server as EurecaServer} from 'eureca.io';
-import {GetIdentityCallback, ReleaseIdentityCallback, TaskIdentity} from "../models/TaskIdentity";
+import {GetIdentityCallback, ReleaseIdentityCallback} from "../models/TaskIdentity";
 import {Logger} from "log4js";
 import {promiseTimeout, reduceObjectToAllowedKeys} from "../utils/utils";
 
@@ -195,8 +195,8 @@ export class Server {
                         // Check if getIdentity callback promise has been set
                         if (__this.identityCallback != null) {
 
-                            // Get identity
-                            clientPromises.push(promiseTimeout(30000, __this.identityCallback(client.token).then((identity: TaskIdentity) => { // timeout 10 sec
+                            // Get identity and launch task: timeout 30 sec
+                            clientPromises.push(promiseTimeout(30000, __this.identityCallback(client.token).then((identity: any) => { // timeout 10 sec
 
                                 // Get clientIdentifier
                                 let clientIdentifier: any = __this.clients.find(x => x.clientId == client.clientId);
@@ -204,19 +204,22 @@ export class Server {
                                     clientIdentifier.identity = identity; // Save identity for releasing
 
                                 return __this.server.getClient(client.clientId).task.launch(identity, __this.taskParameters); // Launch task with identity
-                            })).then(() => ++success)
-                                .catch((err: any) => {
-                                    //logger.server().error("Error while getting identity", err);
+                            })).then(() => ++success) // Increment success after launch
+                                .catch((err: any) => { // Get identity / launch error
+                                    // Do not send error
                                     ++errors; // Increments errors
                                 }));
                         }
 
                         // No identity
                         else {
-                            clientPromises.push(promiseTimeout(30000, __this.server.getClient(client.clientId).task.launch(null, __this.taskParameters)).then(() => ++success).catch((err: any) => {
-                                //logger.server().error("Error while getting identity", err);
-                                ++errors; // Increments errors
-                            })); // Launch task without identity timeout 10 sec
+                            // Launch task without identity: timeout 30 sec
+                            clientPromises.push(promiseTimeout(30000, __this.server.getClient(client.clientId).task.launch({}, __this.taskParameters)) // Launch task without identity
+                                .then(() => ++success) // Increment success after launch
+                                .catch((err: any) => { // Get identity / launch error
+                                    // Do not send error
+                                    ++errors; // Increments errors
+                                }));
                         }
 
                         ++totalPromised;
