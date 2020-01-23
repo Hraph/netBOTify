@@ -40,6 +40,9 @@ class RemoteCLI extends Client_1.Client {
                 if (options != null) {
                     options.forEach(x => (x.key != null && x.description != null) ? command.option(x.key, x.description) : null);
                 }
+            },
+            getVorpalInstance: () => {
+                return vorpal;
             }
         };
         let __this = this;

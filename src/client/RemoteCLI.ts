@@ -672,6 +672,12 @@ export class RemoteCLI extends Client {
             if (options != null){
                 options.forEach(x => (x.key != null && x.description != null) ? command.option(x.key, x.description) : null); // Apply options
             }
+        },
+        /**
+         * Returns the current vorpal instance
+         */
+        getVorpalInstance: () => {
+            return vorpal;
         }
     }
 }

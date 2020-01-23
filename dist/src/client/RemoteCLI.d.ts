@@ -26,5 +26,6 @@ export declare class RemoteCLI extends Client {
             key: string;
             description: string;
         }] | undefined) => void;
+        getVorpalInstance: () => any;
     };
 }
