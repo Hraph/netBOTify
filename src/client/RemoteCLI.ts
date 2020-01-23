@@ -1,7 +1,7 @@
 import {Client} from "./Client";
-import {ClientIdentifier, ClientType, TaskStatus} from "../models/ClientIdentifier";
+import {ClientType} from "../models/ClientIdentifier";
 import {logger} from "../utils/logger";
-import {TaskParameterItem, TaskParameterList} from "../models/TaskParameters";
+import {TaskParameterList} from "../models/TaskParameters";
 import {RemoteCLIConfig} from "../models/RemoteCLIConfig";
 import {Logger} from "log4js";
 import {objectGroupByPropertyAndCount} from "../utils/utils";
@@ -563,16 +563,16 @@ export class RemoteCLI extends Client {
     public task = {
         /**
          * Add handler on task result event
-         * @param {(result: any, identifier: ClientIdentifier, workerToken: string) => void} callback
+         * @param {(result: any, workerToken: string) => void} callback
          */
-        onTaskResult: (callback: (result: any, identifier: ClientIdentifier, workerToken: string) => void) => {
+        onTaskResult: (callback: (result: any, workerToken: string) => void) => {
             this.cliEvent.on("event:taskResult", callback);
         },
         /**
          * Add handler on task error event
          * @param callback
          */
-        onTaskError: (callback: (error: any, identifier: ClientIdentifier, workerToken: string) => void) => {
+        onTaskError: (callback: (error: any, workerToken: string) => void) => {
             this.cliEvent.on("event:taskError", callback);
         }
     };
@@ -585,7 +585,7 @@ export class RemoteCLI extends Client {
          * Add handler on tunnel error event
          * @param callback
          */
-        onTunnelError: (callback: (error: any, identifier: ClientIdentifier, workerToken: string) => void) => {
+        onTunnelError: (callback: (error: any, workerToken: string) => void) => {
             this.cliEvent.on("event:tunnelError", callback);
         }
     };
@@ -597,16 +597,16 @@ export class RemoteCLI extends Client {
         /**
          * Add handler on custom event
          * @param {string} eventName
-         * @param {(data: any, identifier: ClientIdentifier, workerToken: string) => void} callback
+         * @param {(data: any, workerToken: string) => void} callback
          */
-        onEvent: (eventName: string, callback: (data: any, identifier: ClientIdentifier, workerToken: string) => void) => {
+        onEvent: (eventName: string, callback: (data: any, workerToken: string) => void) => {
             this.cliEvent.on("event:" + eventName, callback);
         },
         /**
          * Add handler on any event
          * @param callback
          */
-        onAnyEvent: (callback: (eventName: string, data: any, identifier: ClientIdentifier, workerToken: string) => void) => {
+        onAnyEvent: (callback: (eventName: string, data: any, workerToken: string) => void) => {
             this.cliEvent.on("event", callback);
         }
     };
