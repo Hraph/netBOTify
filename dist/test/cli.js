@@ -20,10 +20,16 @@ cli.customize.addCommand("helloWorkers", "Get screenshot", (args, endCommand) =>
         key: "-b, --bye",
         description: "Say goodbye"
     }]);
-cli.events.onAnyEvent((eventName, data, identifier, workerToken) => {
-    cli.logger().debug("Got event %s: %s", eventName, data);
+cli.events.onAnyEvent((eventName, data, workerToken) => {
+    cli.logger().debug("Got event %s (worker %s): %s", eventName, workerToken, data);
 });
-cli.task.onTaskResult((data, identifier, workerToken) => {
-    cli.logger().debug("Got result:", data);
+cli.task.onTaskResult((data, workerToken) => {
+    cli.logger().fatal("Got result (worker %s):", workerToken, data);
+});
+cli.task.onTaskError((error, workerToken) => {
+    cli.logger().warn("Task error (worker %s): %s", workerToken, error);
+});
+cli.tunnel.onTunnelError((error, workerToken) => {
+    cli.logger().warn("Tunnel error (worker %s): %s", workerToken, error);
 });
 //# sourceMappingURL=cli.js.map

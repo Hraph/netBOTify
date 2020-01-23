@@ -272,6 +272,35 @@ class RemoteCLI extends Client_1.Client {
                     .catch(__this._serverInvalidCommandError);
             });
             vorpal
+                .command('workers identities [token]', 'Get server connected workers identities.')
+                .option('-w, --where <filter>', 'Find a certain value of a property')
+                .option('-g, --groupby <property>', 'Group result by a property')
+                .option('-c, --count', 'Count only')
+                .action(function (args, callback) {
+                __this._executeDistantCommand(__this.server.cli.getWorkersIdentities, args.token)
+                    .then((result) => {
+                    if (args.options.where) {
+                        vorpal.log("Caution: custom filter is used!");
+                        if (!args.options.where.includes("=")) {
+                            vorpal.log("Invalid where filter");
+                        }
+                        else {
+                            let where = args.options.where.split("=");
+                            let key = where[0].trim();
+                            let filter = where[1].replace(/'/gi, "").trim();
+                            result = result.filter((x) => x[key] == filter);
+                        }
+                    }
+                    vorpal.log(result.length + " identities");
+                    if (!args.options.count && args.options.groupby)
+                        vorpal.log(cTable.getTable(utils_1.objectGroupByPropertyAndCount(result, args.options.groupby)));
+                    else if (!args.options.count && result.length > 0)
+                        vorpal.log(cTable.getTable(result));
+                    callback();
+                })
+                    .catch(__this._serverInvalidCommandError);
+            });
+            vorpal
                 .command('clis [token]', 'Get server connected CLIs.')
                 .option('-w, --where <filter>', 'Find a certain value of a property')
                 .option('-g, --groupby <property>', 'Group result by a property')

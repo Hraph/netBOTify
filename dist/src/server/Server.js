@@ -461,6 +461,15 @@ class Server {
                     return (token !== null) ? (client.clientType == ClientIdentifier_1.ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientIdentifier_1.ClientType.Worker);
                 }).map(client => utils_1.reduceObjectToAllowedKeys(client, __this.filteredClientIdentifierWorkerKeys));
             },
+            getWorkersIdentities: function (token = null) {
+                return __this.clients.filter(client => {
+                    return (token !== null) ? (client.clientType == ClientIdentifier_1.ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientIdentifier_1.ClientType.Worker);
+                }).map(client => {
+                    return Object.assign({
+                        token: client.token
+                    }, client.identity);
+                });
+            },
             getCLIs: function (token = null) {
                 return __this.clients.filter(client => {
                     return (token !== null) ? (client.clientType == ClientIdentifier_1.ClientType.RemoteCLI && client.token.startsWith(token)) : (client.clientType == ClientIdentifier_1.ClientType.RemoteCLI);
