@@ -651,6 +651,20 @@ export class Server {
                 }).map(client => reduceObjectToAllowedKeys(client, __this.filteredClientIdentifierWorkerKeys)); // Return restricted object
             },
             /**
+             * Return worker currently used identities
+             * @param token
+             */
+            getWorkersIdentities: function(token: any = null) {
+                return __this.clients.filter(client => {
+                    // Custom filter if token parameter is set and Worker
+                    return (token !== null) ? (client.clientType == ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientType.Worker);
+                }).map(client => {
+                    return Object.assign({
+                        token: client.token
+                    }, client.identity); // Merge with identity
+                }); // Return restricted object
+            },
+            /**
              * Return the list of connected clis
              * @param token: Optional parameter to search by token
              * @returns {ClientIdentifier[]}

@@ -367,6 +367,47 @@ export class RemoteCLI extends Client {
                         })
                         .catch(__this._serverInvalidCommandError);
                 });
+
+            /**
+             * List of currently used workers identities command
+             */
+            vorpal
+                .command('workers identities [token]', 'Get server connected workers identities.')
+                .option('-w, --where <filter>', 'Find a certain value of a property')
+                .option('-g, --groupby <property>', 'Group result by a property')
+                .option('-c, --count', 'Count only')
+                .action(function(args: any, callback: Function) {
+                    __this._executeDistantCommand(__this.server.cli.getWorkersIdentities, args.token)
+                        .then((result: any) => {
+                            // Process where
+                            if (args.options.where){
+                                vorpal.log("Caution: custom filter is used!");
+
+                                if (!args.options.where.includes("=")) {
+                                    vorpal.log("Invalid where filter");
+                                }
+                                else {
+                                    let where: any = args.options.where.split("=");
+                                    let key: string = where[0].trim();
+                                    let filter: string = where[1].replace(/'/gi, "").trim(); // filter is surrounded with quotes involuntary by vorpal
+
+                                    result = result.filter((x: any) => x[key] == filter);
+                                }
+                            }
+
+                            vorpal.log(result.length + " identities");
+
+                            // Process grouby
+                            if (!args.options.count && args.options.groupby)
+                                vorpal.log(cTable.getTable(objectGroupByPropertyAndCount(result, args.options.groupby)));
+
+                            else if (!args.options.count && result.length > 0) // No options
+                                vorpal.log(cTable.getTable(result));
+
+                            callback();
+                        })
+                        .catch(__this._serverInvalidCommandError);
+                });
     
             /**
              * List of connected CLIs command
