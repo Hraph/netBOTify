@@ -256,6 +256,7 @@ class Server {
                     client.taskStatus = ClientIdentifier_1.TaskStatus.Idle;
                     __this.serverEvent.emit("taskEvent", "taskStopped", null, client, workerProxy);
                     __this._saveWorkerLog(client, "taskStatus", "STOPPED");
+                    __this._releaseTaskIdentity(client);
                 });
             },
             onResult: function (result) {

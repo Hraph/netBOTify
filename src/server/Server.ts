@@ -321,6 +321,7 @@ export class Server {
 
                     __this.serverEvent.emit("taskEvent", "taskStopped", null, client, workerProxy); // Emit event
                     __this._saveWorkerLog(client, "taskStatus", "STOPPED"); // Save to log
+                    __this._releaseTaskIdentity(client);
                 });
             },
             /**
