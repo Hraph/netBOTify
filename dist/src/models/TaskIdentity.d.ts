@@ -2,8 +2,8 @@ export interface TaskIdentity {
     id: any;
 }
 export interface GetIdentityCallback {
-    (): Promise<TaskIdentity>;
+    (): Promise<any>;
 }
 export interface ReleaseIdentityCallback {
-    (identity: TaskIdentity): Promise<void>;
+    (identity: any): Promise<void>;
 }
