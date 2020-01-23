@@ -379,7 +379,7 @@ export class Server {
                 let workerProxy = this.clientProxy;
 
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
-                    __this.serverEvent.emit("taskEvent", "taskResult", data, client, workerProxy); // Emit event
+                    __this.serverEvent.emit("taskEvent", "taskEnded", data, client, workerProxy); // Emit event
 
                     client.taskStatus = TaskStatus.Ended;
                     let formattedData = (typeof data == "object") ? JSON.stringify(data) : data;

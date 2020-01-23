@@ -286,7 +286,7 @@ class Server {
             onEnded: function (data) {
                 let workerProxy = this.clientProxy;
                 __this.clients.filter(client => client.clientId == this.user.clientId).forEach(client => {
-                    __this.serverEvent.emit("taskEvent", "taskResult", data, client, workerProxy);
+                    __this.serverEvent.emit("taskEvent", "taskEnded", data, client, workerProxy);
                     client.taskStatus = ClientIdentifier_1.TaskStatus.Ended;
                     let formattedData = (typeof data == "object") ? JSON.stringify(data) : data;
                     __this._saveWorkerLog(client, "taskStatus", `ENDED: ${formattedData}`);
