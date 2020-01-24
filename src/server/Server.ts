@@ -307,7 +307,8 @@ export class Server {
                     client.taskStatus = TaskStatus.Running;
 
                     __this.serverEvent.emit("taskEvent", "taskLaunched", null, client, workerProxy); // Emit event
-                    __this._saveWorkerLog(client, "taskStatus", "LAUNCHED"); // Save to log
+                    let message = (typeof client.identity !== "undefined") ? `LAUNCHED - ${JSON.stringify(client.identity)}` : "LAUNCHED"
+                    __this._saveWorkerLog(client, "taskStatus", message); // Save to log
                 });
             },
             /**
