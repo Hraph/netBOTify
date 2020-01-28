@@ -197,7 +197,6 @@ class Worker extends Client_1.Client {
                                 }
                                 else {
                                     logger_1.logger.worker().debug(`Tunnel error: No tunnel exists on port ${localPort}`);
-                                    __this.server.tunnel.onError(`Tunnel error: No tunnel exists on port ${localPort}`);
                                     return context.return(0);
                                 }
                             }

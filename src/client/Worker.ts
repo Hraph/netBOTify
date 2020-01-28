@@ -239,7 +239,6 @@ export class Worker extends Client {
                             // Else never created
                             else {
                                 logger.worker().debug(`Tunnel error: No tunnel exists on port ${localPort}`);
-                                __this.server.tunnel.onError(`Tunnel error: No tunnel exists on port ${localPort}`); // Send error to server
 
                                 return context.return(0);
                             }

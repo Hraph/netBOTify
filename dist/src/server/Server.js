@@ -380,15 +380,17 @@ class Server {
                     });
                 });
             },
-            stop: function (token, localPort, killAll = false) {
+            stop: function (token = null, localPort, kill = false) {
                 return __awaiter(this, void 0, void 0, function* () {
                     let clientPromises = [];
                     let success = 0;
                     let context = this;
                     context.async = true;
-                    __this.clients.filter(client => client.clientType == ClientIdentifier_1.ClientType.Worker && client.token === token)
+                    __this.clients.filter(client => {
+                        return (token !== null) ? (client.clientType == ClientIdentifier_1.ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientIdentifier_1.ClientType.Worker);
+                    })
                         .forEach(client => {
-                        clientPromises.push(utils_1.promiseTimeout(30000, __this.server.getClient(client.clientId).tunnel.stop(localPort, killAll)).then((result) => {
+                        clientPromises.push(utils_1.promiseTimeout(30000, __this.server.getClient(client.clientId).tunnel.stop(localPort, kill)).then((result) => {
                             if (!isNaN(result))
                                 success += result;
                         }).catch((err) => {
@@ -405,16 +407,16 @@ class Server {
                     });
                 });
             },
-            get: function (token) {
+            get: function (token = null) {
                 let clientPromises = [];
                 let results = [];
                 let context = this;
                 context.async = true;
-                if (!token)
-                    return;
-                __this.clients.filter(client => client.clientType == ClientIdentifier_1.ClientType.Worker && client.token.startsWith(token))
+                __this.clients.filter(client => {
+                    return (token !== null) ? (client.clientType == ClientIdentifier_1.ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientIdentifier_1.ClientType.Worker);
+                })
                     .forEach(client => {
-                    clientPromises.push(utils_1.promiseTimeout(10000, __this.server.getClient(client.clientId).tunnel.get()).then((data) => {
+                    clientPromises.push(utils_1.promiseTimeout(30000, __this.server.getClient(client.clientId).tunnel.get()).then((data) => {
                         if (Array.isArray(data))
                             results = results.concat(data);
                     }).catch((err) => {

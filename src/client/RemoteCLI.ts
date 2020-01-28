@@ -284,41 +284,75 @@ export class RemoteCLI extends Client {
              * Stop a tunnel on worker
              */
             vorpal
-                .command('tunnel stop <token> <port>', 'Stop a tunnel on a worker.')
-                .action((args: any, callback: Function) => {
-                    __this._executeDistantCommand(__this.server.tunnel.stop, args.token, args.port)
-                        .then((result: any) => {
-                            vorpal.log("%d tunnel%s stopped", result.success, (result.success >= 2) ? "s" : "");
+                .command('tunnel stop [token] <port>', 'Stop a tunnel on all or a specific worker.')
+                .action(async function (args: any, callback: Function) {
+                    // Ask for confirmation
+                    let confirm = true;
+                    if (args.token == null) {
+                        //@ts-ignore
+                        let res = await this.prompt({
+                            type: 'confirm',
+                            name: 'continue',
+                            default: false,
+                            message: `Confirm to stop tunnel(s) on all workers for port ${args.port} ?`,
+                        });
+                        confirm = res.continue;
+                    }
 
-                            callback();
-                        })
-                        .catch(__this._serverInvalidCommandError);
+                    if (confirm) {
+                        __this._executeDistantCommand(__this.server.tunnel.stop, args.token, args.port)
+                            .then((result: any) => {
+                                vorpal.log("%d tunnel%s stopped", result.success, (result.success >= 2) ? "s" : "");
+
+                                callback();
+                            })
+                            .catch(__this._serverInvalidCommandError);
+                    }
+                    else
+                        callback();
                 });
 
             /**
              * Kill all tunnels on worker
              */
             vorpal
-                .command('tunnel kill <token>', 'Stop a tunnel on a worker.')
-                .action((args: any, callback: Function) => {
-                    __this._executeDistantCommand(__this.server.tunnel.stop, args.token, 0, true)
-                        .then((result: any) => {
-                            vorpal.log("%d tunnel%s stopped", result.success, (result.success >= 2) ? "s" : "");
+                .command('tunnel kill [token]', 'Stop a tunnel on all or a specific worker.')
+                .action(async function (args: any, callback: Function) {
+                    // Ask for confirmation
+                    let confirm = true;
+                    if (args.token == null) {
+                        //@ts-ignore
+                        let res = await this.prompt({
+                            type: 'confirm',
+                            name: 'continue',
+                            default: false,
+                            message: 'Confirm to kill tunnel(s) on all workers?',
+                        });
+                        confirm = res.continue;
+                    }
 
-                            callback();
-                        })
-                        .catch(__this._serverInvalidCommandError);
+                    if (confirm){
+                        __this._executeDistantCommand(__this.server.tunnel.stop, args.token, 0, true)
+                            .then((result: any) => {
+                                vorpal.log("%d tunnel%s killed", result.success, (result.success >= 2) ? "s" : "");
+
+                                callback();
+                            })
+                            .catch(__this._serverInvalidCommandError);
+                    }
+                    else
+                        callback();
                 });
 
             /**
              * List of opened tunnels on worker
              */
             vorpal
-                .command('tunnel get <token>', 'Get tunnels on a worker.')
+                .command('tunnel get [token]', 'Get tunnels on a all or specific worker.')
                 .action((args: any, callback: Function) => {
                     __this._executeDistantCommand(__this.server.tunnel.get, args.token)
                         .then((result: any) => {
-                            vorpal.log("%d tunnel%s for the worker %s", result.length, (result.length >= 2) ? "s" : "", args.token);
+                            vorpal.log("%d tunnel%s", result.length, (result.length >= 2) ? "s" : "");
 
                             vorpal.log(cTable.getTable(result));
 

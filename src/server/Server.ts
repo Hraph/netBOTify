@@ -526,16 +526,19 @@ export class Server {
              * @param token
              * @param localPort
              */
-            stop: async function(token: string, localPort: number, killAll: boolean = false) {
+                stop: async function(token: any = null, localPort: number, kill: boolean = false) {
                 let clientPromises: any[] = [];
                 let success: number = 0;
                 let context = this;
                 context.async = true; //Define an asynchronous return
 
-                __this.clients.filter(client => client.clientType == ClientType.Worker && client.token === token)
+                __this.clients.filter(client => {
+                    // Custom filter if token parameter is set and Worker
+                    return (token !== null) ? (client.clientType == ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientType.Worker);
+                })
                     .forEach(client => {
                         // Stop send the number of succeed stops
-                        clientPromises.push(promiseTimeout(30000, __this.server.getClient(client.clientId).tunnel.stop(localPort, killAll)).then((result: any) => { // timeout 30 sec
+                        clientPromises.push(promiseTimeout(30000, __this.server.getClient(client.clientId).tunnel.stop(localPort, kill)).then((result: any) => { // timeout 30 sec
                             if (!isNaN(result))
                                 success+=result;
                         }).catch((err: any) => {
@@ -556,7 +559,7 @@ export class Server {
              * Get all tunnels created on the worker
              * @param workerToken
              */
-            get: function (token: string) {
+            get: function (token: any = null) {
                 let clientPromises: any[] = [];
                 let results: any[] = [];
 
@@ -564,13 +567,13 @@ export class Server {
                 let context = this;
                 context.async = true; //Define an asynchronous return
 
-                if (!token)
-                    return;
-
-                __this.clients.filter(client => client.clientType == ClientType.Worker && client.token.startsWith(token))
+                __this.clients.filter(client => {
+                    // Custom filter if token parameter is set and Worker
+                    return (token !== null) ? (client.clientType == ClientType.Worker && client.token.startsWith(token)) : (client.clientType == ClientType.Worker);
+                })
                     .forEach(client => {
                         // Get send an array of tunnels so we need to concat it
-                        clientPromises.push(promiseTimeout(10000,__this.server.getClient(client.clientId).tunnel.get()).then((data: any) => {
+                        clientPromises.push(promiseTimeout(30000,__this.server.getClient(client.clientId).tunnel.get()).then((data: any) => {
                             if (Array.isArray(data))
                                 results = results.concat(data);
                         }).catch((err: any) => {
