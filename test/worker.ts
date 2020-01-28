@@ -51,3 +51,5 @@ worker.task.onStatusTask(async function(server) {
         token: identifier.token
     }
 });
+
+console.log(`My token is ${worker.getToken()}`);

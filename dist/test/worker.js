@@ -48,4 +48,5 @@ worker.task.onStatusTask(function (server) {
         };
     });
 });
+console.log(`My token is ${worker.getToken()}`);
 //# sourceMappingURL=worker.js.map

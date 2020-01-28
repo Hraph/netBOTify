@@ -123,4 +123,11 @@ export class Client {
     public getServerProxy(){
         return this.server;
     }
+
+    /**
+     * Get client token
+     */
+    public getToken(){
+        return this.identifier.token;
+    }
 }

@@ -16,4 +16,5 @@ export declare class Client {
     connect(): void;
     addConfigItem(name: string, item: any): this;
     getServerProxy(): any;
+    getToken(): string;
 }

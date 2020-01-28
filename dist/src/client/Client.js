@@ -64,6 +64,9 @@ class Client {
     getServerProxy() {
         return this.server;
     }
+    getToken() {
+        return this.identifier.token;
+    }
 }
 exports.Client = Client;
 //# sourceMappingURL=Client.js.map
