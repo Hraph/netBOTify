@@ -696,7 +696,7 @@ export class RemoteCLI extends Client {
          * @param {string} commandDescription
          * @param {(args: any, endCommand: Function) => void} callback
          */
-        addCommand: (commandWord: string, commandDescription: string, callback: (args: any, endCommand: Function) => void, options?: [{key: string, description: string}]) => {
+        addCommand: (commandWord: string, commandDescription: string, callback: (args: any, endCommand: Function) => void, options?: {key: string, description: string}[]) => {
             let command = vorpal
                 .command(commandWord, commandDescription)
                 .action((vorpalArgs: any, vorpalCallback: Function) => {

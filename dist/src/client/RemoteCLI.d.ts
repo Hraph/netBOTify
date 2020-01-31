@@ -22,10 +22,10 @@ export declare class RemoteCLI extends Client {
         onAnyEvent: (callback: (eventName: string, data: any, workerToken: string) => void) => void;
     };
     customize: {
-        addCommand: (commandWord: string, commandDescription: string, callback: (args: any, endCommand: Function) => void, options?: [{
+        addCommand: (commandWord: string, commandDescription: string, callback: (args: any, endCommand: Function) => void, options?: {
             key: string;
             description: string;
-        }] | undefined) => void;
+        }[] | undefined) => void;
         getVorpalInstance: () => any;
     };
 }
